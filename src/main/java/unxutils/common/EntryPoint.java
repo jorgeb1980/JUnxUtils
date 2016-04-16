@@ -101,7 +101,9 @@ public class EntryPoint {
 	public static List<String> tail(String[] args) {
 		List<String> ret  = new LinkedList<>();
 		if (args != null && args.length > 1) {
-			ret.addAll(Arrays.asList(args));
+			for (int i = 1; i < args.length; i++) {
+				ret.add(args[i]);
+			}
 		}
 		return ret;
 	}
