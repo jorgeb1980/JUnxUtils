@@ -35,7 +35,7 @@ public class EntryPoint {
 			if (commandClass != null) {
 				Object theCommand = null;
 				try {
-					theCommand = commandClass.getConstructor().newInstance();				
+					theCommand = commandClass.getConstructor(List.class).newInstance(rest);				
 				}
 				catch (Exception e) {
 					System.err.println("Could not instantiate the command");
@@ -46,7 +46,7 @@ public class EntryPoint {
 				// List<String> 
 				Method execute = null;
 				try {
-					execute = commandClass.getDeclaredMethod("execute", Path.class, List.class);
+					execute = commandClass.getDeclaredMethod("execute", Path.class);
 				}
 				catch(Exception e) {
 					System.err.println(
@@ -57,7 +57,7 @@ public class EntryPoint {
 				Object ret = null;
 				try {
 					// Launch the command
-					ret = execute.invoke(theCommand, currentRelativePath, rest);
+					ret = execute.invoke(theCommand, currentRelativePath);
 				}
 				catch(Throwable t) {
 					System.err.println(t.getMessage());

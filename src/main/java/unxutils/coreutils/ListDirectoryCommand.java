@@ -5,12 +5,12 @@ import java.util.List;
 
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.DefaultParser;
-import org.apache.commons.cli.GnuParser;
 import org.apache.commons.cli.Option;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
 
 import unxutils.common.Command;
+import unxutils.common.UnxException;
 
 /**
 <b>Program documentation</b><br>
@@ -145,25 +145,36 @@ public class ListDirectoryCommand {
 	
 	//-----------------------------------------------------------------
 	// Command methods	
-
-	// Entry point for ls
-	public int execute(Path currentPath, List<String> args) {
+	
+	/**
+	 * Builds an ls command with the proper arguments.
+	 * @param args Arguments for the command.
+	 * @throws UnxException In case of parsing error.
+	 */
+	public ListDirectoryCommand(List<String> args) throws UnxException {
 		buildOptions();
-		int ret = 0;
 		try {
 			parseCommandLine(args);
-			printCommandLine();
 		}
 		catch(ParseException e) {
-			ret = 2;
+			throw new UnxException(e);
 		}
+	}
+
+	// Entry point for ls
+	public int execute(Path currentPath) {
+		
+		int ret = 0;
+		
+		for (Option opt: commandLine.getOptions()) {
+			System.out.println(opt);
+		}
+		
 		return ret;
 	}
 	
-	private void printCommandLine() {
-		for (Option opt: commandLine.getOptions()) {
-			System.out.println(opt);
-		}		
+	public Option[] getOptions() {
+		return commandLine.getOptions();
 	}
 	
 	// Builds the ls options
@@ -210,6 +221,7 @@ public class ListDirectoryCommand {
 		options.addOption("h", "human-readable", false, "with -l and/or -s, "
 				+ "print human readable sizes (e.g., 1K 234M 2G)");
 		options.addOption("L", "dereference", false, "list entries pointed to by symbolic links");
+		// Only 1 level!
 		options.addOption("R", "recursive", false, "list subdirectories recursively");
 		options.addOption("l", false, "uses a long output format");
 	}
