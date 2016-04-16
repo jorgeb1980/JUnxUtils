@@ -1,3 +1,4 @@
+package unxutils.common;
 import java.math.BigDecimal;
 
 import org.junit.Assert;

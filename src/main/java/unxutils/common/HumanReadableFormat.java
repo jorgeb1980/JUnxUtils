@@ -23,7 +23,6 @@ public class HumanReadableFormat {
 	 */
 	public static String format(long number) {
 		return format(new BigDecimal(number));
-		//return humanReadableByteCount(number);
 	}
 	
 	/**

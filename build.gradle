@@ -42,6 +42,7 @@ task generateCommandScripts(dependsOn: copyRuntimeLibs) << {
 	File template = new File(projectDir, "scriptTemplates/template.bat")
 	scriptsDir.mkdirs()
 	for(Class<?> command: commands) {
+		// For every annotated class, create a .bat file based on the template 
 		Object annotation = command.getAnnotation(clazz);
 		String commandName = annotation.command()
 		File script = new File(scriptsDir, commandName + ".bat")

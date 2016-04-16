@@ -1,12 +1,13 @@
 package unxutils.coreutils;
 
+import java.io.File;
 import java.nio.file.Path;
+import java.util.LinkedList;
 import java.util.List;
 
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.DefaultParser;
 import org.apache.commons.cli.Option;
-import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
 
 import unxutils.common.Command;
@@ -138,8 +139,6 @@ public class ListDirectoryCommand {
 	//-----------------------------------------------------------------
 	// Command properties
 	
-	/** Options defined for the command. */
-	private Options options;
 	/** Command line passed to the command. */
 	private CommandLine commandLine;
 	
@@ -152,7 +151,6 @@ public class ListDirectoryCommand {
 	 * @throws UnxException In case of parsing error.
 	 */
 	public ListDirectoryCommand(List<String> args) throws UnxException {
-		buildOptions();
 		try {
 			parseCommandLine(args);
 		}
@@ -162,76 +160,82 @@ public class ListDirectoryCommand {
 	}
 
 	// Entry point for ls
-	public int execute(Path currentPath) {
-		
+	public int execute(final Path currentPath) {		
 		int ret = 0;
 		
-		for (Option opt: commandLine.getOptions()) {
-			System.out.println(opt);
+		// Gather results
+		List<FileResult> results = new LinkedList<>();
+		
+		for (File f:currentPath.toFile().listFiles(
+				new ListDirectoryFilter(commandLine))) {
+			results.add(new FileResult(f, commandLine.hasOption("R")));
+		}
+		
+		// Show . and .. if necessary
+		
+		// Print results:
+		for (FileResult f: results) {
+			printFileResult(f);
 		}
 		
 		return ret;
 	}
 	
+	private void printFileResult(FileResult f) {
+		if (f.getChildren() == null) {
+			System.out.println(f.getFile());
+		}
+		else {
+			System.out.println(f.getFile().getName() + ":");
+			for (FileResult child: f.getChildren()) {
+				printFileResult(child);
+			}
+		}
+	}
+	
+	// Inner class to store the results
+	private static class FileResult {
+		// File or directory
+		private File f = null;
+		// Children if f is a directory
+		private List<FileResult> children = null;
+		
+		// Builds a file result on a File
+		public FileResult(File f, boolean recursive) {
+			this.f = f;
+			if (recursive && this.f.isDirectory()) {
+				this.children = new LinkedList<>();
+				for (File child: this.f.listFiles()) {
+					this.children.add(new FileResult(child, recursive));
+				}
+			}
+		}
+
+		/**
+		 * @return the f
+		 */
+		public File getFile() {
+			return f;
+		}
+
+		/**
+		 * @return the children
+		 */
+		public List<FileResult> getChildren() {
+			return children;
+		}
+		
+			
+	}
+	
 	public Option[] getOptions() {
 		return commandLine.getOptions();
 	}
-	
-	// Builds the ls options
-	private void buildOptions() {
-		options = new Options();
-		options.addOption("a", "all", false, 
-				"In directories, do not ignore file names that start with ‘.’");
-		options.addOption("A", "almost-all", false, 
-				"In directories, do not ignore all file names that start "
-				+ "with ‘.’; ignore only . and ... The --all (-a) option overrides this option");
-		options.addOption("B", "ignore-backups", false, 
-				"In directories, ignore files that end with ‘~’. This option "
-				+ "is equivalent to ‘--ignore='*~' --ignore='.*~'’");
-		options.addOption("d", "directory", false, 
-				"List just the names of directories, as with other types of files, "
-				+ "rather than listing their contents. Do not follow symbolic links "
-				+ "listed on the command line unless the --dereference-command-line (-H), "
-				+ "dereference (-L), or --dereference-command-line-symlink-to-dir "
-				+ "options are specified");	
-		options.addOption("H", "dereference-command-line", false, 
-				"If a command line argument specifies a symbolic link, show "
-				+ "information for the file the link references rather than for the link itself");
-		options.addOption(Option.builder().hasArg(false).longOpt("dereference-command-line-symlink-to-dir").
-			desc("Do not dereference symbolic links, with one exception: if a "
-					+ "command line argument specifies a symbolic link that refers "
-					+ "to a directory, show information for that directory rather "
-					+ "than for the link itself. This is the default behavior when "
-					+ "no other dereferencing-related option has been specified "
-					+ "(--classify (-F), --directory (-d), (-l), --dereference (-L), "
-					+ "or --dereference-command-line (-H))").build());
-		options.addOption(Option.builder().hasArg(false).longOpt("group-directories-first").
-			desc("Group all the directories before the files and then sort "
-					+ "the directories and the files separately using the "
-					+ "selected sort key (see –sort option). That is, this "
-					+ "option specifies a primary sort key, and the –sort "
-					+ "option specifies a secondary key. However, any use of "
-					+ "sort=none (-U) disables this option altogether").build());
-		options.addOption(Option.builder().hasArg(true).longOpt("hide").
-			desc("In directories, ignore files whose names match the shell pattern pattern,"
-					+ " unless the --all (-a) or --almost-all (-A) is also given. This option "
-					+ "acts like --ignore=pattern except that it has no effect if --all (-a) "
-					+ "or --almost-all (-A) is also given").build());
-		options.addOption(Option.builder().hasArg(false).longOpt("color").
-			desc("colors the output. WHEN may be 'never', 'auto', or 'always' (by default)").build());
-		options.addOption("I", "ignore", true, "do not list implied entries matching shell PATTERN");
-		options.addOption("h", "human-readable", false, "with -l and/or -s, "
-				+ "print human readable sizes (e.g., 1K 234M 2G)");
-		options.addOption("L", "dereference", false, "list entries pointed to by symbolic links");
-		// Only 1 level!
-		options.addOption("R", "recursive", false, "list subdirectories recursively");
-		options.addOption("l", false, "uses a long output format");
-	}
-	
+		
 	// Reads the command line with the group of options passed
 	private void parseCommandLine(List<String> args) throws ParseException {
 		commandLine =  new DefaultParser().parse(
-				options, 
+				ListDirectoryOptions.build(), 
 				args.toArray(new String[args.size()]),
 				// Fail if there is something unrecognized
 				false);

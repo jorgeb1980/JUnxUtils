@@ -9,6 +9,9 @@ public class UnxException extends Exception {
 	//------------------------------------------------------------
 	// Class constants
 	
+	/** Return code. */
+	private int code = -1337;
+	
 	/**
 	 * Used for serialization.
 	 */
@@ -17,6 +20,25 @@ public class UnxException extends Exception {
 	//------------------------------------------------------------
 	// Class methods
 	
+	/**
+	 * Sets the return code for the exception.
+	 * @param code Return code for the command line application.
+	 * @return Reference to the exception object.
+	 */
+	public UnxException setReturnCode(int code) {
+		this.code = code;
+		return this;
+	}
+	
+	/**
+	 * @return The return code
+	 */
+	public int getReturnCode() {
+		return code;
+	}
+
+
+
 	/**
 	 * Builds an exception with an error message.
 	 * @param message Error message.
