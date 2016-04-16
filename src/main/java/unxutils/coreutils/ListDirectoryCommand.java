@@ -217,6 +217,8 @@ public class ListDirectoryCommand {
 					+ " unless the --all (-a) or --almost-all (-A) is also given. This option "
 					+ "acts like --ignore=pattern except that it has no effect if --all (-a) "
 					+ "or --almost-all (-A) is also given").build());
+		options.addOption(Option.builder().hasArg(false).longOpt("color").
+			desc("colors the output. WHEN may be 'never', 'auto', or 'always' (by default)").build());
 		options.addOption("I", "ignore", true, "do not list implied entries matching shell PATTERN");
 		options.addOption("h", "human-readable", false, "with -l and/or -s, "
 				+ "print human readable sizes (e.g., 1K 234M 2G)");
