@@ -1,9 +1,17 @@
 package unxutils.coreutils;
 
+import java.io.File;
 import java.nio.file.Path;
+import java.util.LinkedList;
 import java.util.List;
 
+import org.apache.commons.cli.CommandLine;
+import org.apache.commons.cli.DefaultParser;
+import org.apache.commons.cli.Option;
+import org.apache.commons.cli.ParseException;
+
 import unxutils.common.Command;
+import unxutils.common.UnxException;
 
 /**
 <b>Program documentation</b><br>
@@ -119,15 +127,117 @@ that the link points to.
 ‘-R’
 ‘--recursive’
 List the contents of all directories recursively.
+
+ --color[=WHEN]       colors the output. WHEN may be 'never', 'auto',
+                               or 'always' (by default)
 }
 </pre>
 */
 @Command(command="ls")
 public class ListDirectoryCommand {
+	
+	//-----------------------------------------------------------------
+	// Command properties
+	
+	/** Command line passed to the command. */
+	private CommandLine commandLine;
+	
+	//-----------------------------------------------------------------
+	// Command methods	
+	
+	/**
+	 * Builds an ls command with the proper arguments.
+	 * @param args Arguments for the command.
+	 * @throws UnxException In case of parsing error.
+	 */
+	public ListDirectoryCommand(List<String> args) throws UnxException {
+		try {
+			parseCommandLine(args);
+		}
+		catch(ParseException e) {
+			throw new UnxException(e);
+		}
+	}
 
 	// Entry point for ls
-	public int execute(Path currentPath, List<String> args) {
-		System.out.println("[" + currentPath + "] ls");
-		return 0;
+	public int execute(final Path currentPath) {		
+		int ret = 0;
+		
+		// Gather results
+		List<FileResult> results = new LinkedList<>();
+		
+		for (File f:currentPath.toFile().listFiles(
+				new ListDirectoryFilter(commandLine))) {
+			results.add(new FileResult(f, commandLine.hasOption("R")));
+		}
+		
+		// Show . and .. if necessary
+		
+		// Print results:
+		for (FileResult f: results) {
+			printFileResult(f);
+		}
+		
+		return ret;
+	}
+	
+	private void printFileResult(FileResult f) {
+		if (f.getChildren() == null) {
+			System.out.println(f.getFile());
+		}
+		else {
+			System.out.println(f.getFile().getName() + ":");
+			for (FileResult child: f.getChildren()) {
+				printFileResult(child);
+			}
+		}
+	}
+	
+	// Inner class to store the results
+	private static class FileResult {
+		// File or directory
+		private File f = null;
+		// Children if f is a directory
+		private List<FileResult> children = null;
+		
+		// Builds a file result on a File
+		public FileResult(File f, boolean recursive) {
+			this.f = f;
+			if (recursive && this.f.isDirectory()) {
+				this.children = new LinkedList<>();
+				for (File child: this.f.listFiles()) {
+					this.children.add(new FileResult(child, recursive));
+				}
+			}
+		}
+
+		/**
+		 * @return the f
+		 */
+		public File getFile() {
+			return f;
+		}
+
+		/**
+		 * @return the children
+		 */
+		public List<FileResult> getChildren() {
+			return children;
+		}
+		
+			
+	}
+	
+	public Option[] getOptions() {
+		return commandLine.getOptions();
+	}
+		
+	// Reads the command line with the group of options passed
+	private void parseCommandLine(List<String> args) throws ParseException {
+		commandLine =  new DefaultParser().parse(
+				ListDirectoryOptions.build(), 
+				args.toArray(new String[args.size()]),
+				// Fail if there is something unrecognized
+				false);
 	}
 }

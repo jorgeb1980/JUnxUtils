@@ -1,5 +1,6 @@
 apply plugin: "java"
 
+version = 0.1
 sourceCompatibility = 1.8
 targetCompatibility = 1.8
 
@@ -11,4 +12,42 @@ dependencies {
 	compile 'org.reflections:reflections:0.9.10'
 	compile 'commons-cli:commons-cli:1.3.1'
 	testCompile group: 'junit', name: 'junit', version: '4.+'
+}
+
+// We will need to run a buildscript on the compiled set of classes in order
+//	to generate the shell scripts for all the annotated command classes
+buildscript {
+	repositories {
+	    mavenCentral()
+	}
+	dependencies {		
+		classpath 'org.reflections:reflections:0.9.10'
+		classpath 'commons-cli:commons-cli:1.3.1'
+		classpath files(['build/classes/main'])
+	}
+}
+
+task copyRuntimeLibs(type: Copy, dependsOn: build) {
+	into "build/libs"	
+	from configurations.runtime
+}
+
+// This method generates the appropriate scripts for all the included commands
+task generateCommandScripts(dependsOn: copyRuntimeLibs) << {
+	Class clazz = Class.forName("unxutils.common.Command")
+	// Scan for the annotated classes
+	Set<Class<?>> commands = 
+		new org.reflections.Reflections("unxutils").getTypesAnnotatedWith(clazz);
+	File scriptsDir = new File(buildDir, "scripts")
+	File template = new File(projectDir, "scriptTemplates/template.bat")
+	scriptsDir.mkdirs()
+	for(Class<?> command: commands) {
+		// For every annotated class, create a .bat file based on the template 
+		Object annotation = command.getAnnotation(clazz);
+		String commandName = annotation.command()
+		File script = new File(scriptsDir, commandName + ".bat")
+		script.createNewFile()
+		String formattedText = java.text.MessageFormat.format(template.text, commandName)
+		script.text = formattedText
+	}
 }
