@@ -108,7 +108,7 @@ List the contents of all directories recursively.
 }
 </pre>
 */
-@Command(command="ls")
+@Command(command="ls", description="List information about the files (the current directory by default).")
 public class ListDirectoryCommand {
 	
 	//-----------------------------------------------------------------

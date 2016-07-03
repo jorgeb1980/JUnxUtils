@@ -29,6 +29,15 @@ buildscript {
 	}
 }
 
+// Kind of Maven resource filtering in Gradle
+processResources {
+    filesMatching('**junxutils.properties') {
+        expand(
+            'utilsVersion': project.property('version')
+        )
+    }
+}
+
 task copyRuntimeLibs(type: Copy, dependsOn: build) {
 	into "build/libs"	
 	from configurations.runtime

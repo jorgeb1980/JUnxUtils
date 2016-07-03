@@ -13,4 +13,6 @@ import java.lang.annotation.Target;
 public @interface Command {	
 	// Name of the command
 	String command();
+	// Command description
+	String description();
 }
