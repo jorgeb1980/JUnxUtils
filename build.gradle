@@ -11,6 +11,8 @@ repositories {
 dependencies {
 	compile 'org.reflections:reflections:0.9.10'
 	compile 'commons-cli:commons-cli:1.3.1'
+	compile group: 'commons-lang', name: 'commons-lang', version: '2.6'
+
 	testCompile group: 'junit', name: 'junit', version: '4.+'
 }
 
@@ -25,6 +27,15 @@ buildscript {
 		classpath 'commons-cli:commons-cli:1.3.1'
 		classpath files(['build/classes/main'])
 	}
+}
+
+// Kind of Maven resource filtering in Gradle
+processResources {
+    filesMatching('**junxutils.properties') {
+        expand(
+            'utilsVersion': project.property('version')
+        )
+    }
 }
 
 task copyRuntimeLibs(type: Copy, dependsOn: build) {

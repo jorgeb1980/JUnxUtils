@@ -37,8 +37,6 @@ public class UnxException extends Exception {
 		return code;
 	}
 
-
-
 	/**
 	 * Builds an exception with an error message.
 	 * @param message Error message.
@@ -47,6 +45,16 @@ public class UnxException extends Exception {
 		super(message);
 	}
 	
+	/**
+	 * Builds an exception with an error message.
+	 * @param returnCode Return code for the command line application.
+	 * @param message Error message.
+	 */
+	public UnxException(String message, int returnCode) {
+		super(message);
+		setReturnCode(returnCode);
+	}
+
 	/**
 	 * Builds an exception wrapping a possible cause.
 	 * @param cause Cause of the exception.
