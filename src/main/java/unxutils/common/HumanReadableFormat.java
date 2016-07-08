@@ -44,6 +44,6 @@ public class HumanReadableFormat {
 		if (bigDecimal.compareTo(new BigDecimal(UNIT)) < 0) return bigDecimal.toString();
 		int exp = (int) (Math.log(bytes) / Math.log(UNIT));
 	    String pre = Character.toString("KMGTPE".charAt(exp-1));
-	    return String.format("%.1f %sB", bytes / Math.pow(UNIT, exp), pre);
+	    return String.format("%.1f%s", bytes / Math.pow(UNIT, exp), pre);
 	}
 }
