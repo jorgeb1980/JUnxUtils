@@ -363,14 +363,14 @@ public class ListDirectoryCommand {
 			if (posixAttrs != null) {
 				Set<PosixFilePermission> permissions = posixAttrs.permissions();
 				sb.append(permissions.contains(PosixFilePermission.OWNER_READ)?"r":"-");
-				sb.append(permissions.contains(PosixFilePermission.OWNER_WRITE)?"r":"-");
-				sb.append(permissions.contains(PosixFilePermission.OWNER_EXECUTE)?"r":"-");
+				sb.append(permissions.contains(PosixFilePermission.OWNER_WRITE)?"w":"-");
+				sb.append(permissions.contains(PosixFilePermission.OWNER_EXECUTE)?"x":"-");
 				sb.append(permissions.contains(PosixFilePermission.GROUP_READ)?"r":"-");
-				sb.append(permissions.contains(PosixFilePermission.GROUP_WRITE)?"r":"-");
-				sb.append(permissions.contains(PosixFilePermission.GROUP_EXECUTE)?"r":"-");
+				sb.append(permissions.contains(PosixFilePermission.GROUP_WRITE)?"w":"-");
+				sb.append(permissions.contains(PosixFilePermission.GROUP_EXECUTE)?"x":"-");
 				sb.append(permissions.contains(PosixFilePermission.OTHERS_READ)?"r":"-");
-				sb.append(permissions.contains(PosixFilePermission.OTHERS_WRITE)?"r":"-");
-				sb.append(permissions.contains(PosixFilePermission.OTHERS_EXECUTE)?"r":"-");
+				sb.append(permissions.contains(PosixFilePermission.OTHERS_WRITE)?"w":"-");
+				sb.append(permissions.contains(PosixFilePermission.OTHERS_EXECUTE)?"x":"-");
 			}
 			else {
 				// Assume Windows:
