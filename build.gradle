@@ -50,15 +50,18 @@ task generateCommandScripts(dependsOn: copyRuntimeLibs) << {
 	Set<Class<?>> commands = 
 		new org.reflections.Reflections("unxutils").getTypesAnnotatedWith(clazz);
 	File scriptsDir = new File(buildDir, "scripts")
-	File template = new File(projectDir, "scriptTemplates/template.bat")
 	scriptsDir.mkdirs()
-	for(Class<?> command: commands) {
-		// For every annotated class, create a .bat file based on the template 
-		Object annotation = command.getAnnotation(clazz);
-		String commandName = annotation.command()
-		File script = new File(scriptsDir, commandName + ".bat")
-		script.createNewFile()
-		String formattedText = java.text.MessageFormat.format(template.text, commandName)
-		script.text = formattedText
+	for (File template: new File(projectDir, "scriptTemplates").listFiles()) {
+		//File template = new File(projectDir, "scriptTemplates/template.bat")
+		for(Class<?> command: commands) {
+			String extension = template.getName().substring(template.getName().lastIndexOf(".") + 1)
+			// For every annotated class, create a .bat file based on the template 
+			Object annotation = command.getAnnotation(clazz);
+			String commandName = annotation.command()
+			File script = new File(scriptsDir, commandName + "." + extension)
+			script.createNewFile()
+			String formattedText = template.text.replaceAll("<<COMMAND_NAME>>", commandName)
+			script.text = formattedText
+		}
 	}
 }
