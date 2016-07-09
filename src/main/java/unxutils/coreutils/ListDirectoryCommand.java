@@ -4,14 +4,32 @@ import java.io.File;
 import java.io.FileFilter;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.attribute.BasicFileAttributeView;
+import java.nio.file.attribute.BasicFileAttributes;
+import java.nio.file.attribute.FileOwnerAttributeView;
+import java.nio.file.attribute.FileTime;
+import java.nio.file.attribute.PosixFileAttributeView;
+import java.nio.file.attribute.PosixFileAttributes;
+import java.nio.file.attribute.PosixFilePermission;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
+import java.util.Calendar;
+import java.util.Date;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Locale;
+import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import org.apache.commons.lang.StringUtils;
+
+import unxutils.common.ANSIEscapeCode;
 import unxutils.common.Command;
+import unxutils.common.HumanReadableFormat;
 import unxutils.common.Parameter;
 import unxutils.common.UnxException;
 
@@ -100,6 +118,55 @@ The first option ignores names of length 3 or more that start with ‘.’, the
 second ignores all two-character names that start with ‘.’ except ‘..’, and 
 the third ignores names that start with ‘#’.
 
+`-l'
+`--format=long'
+`--format=verbose'
+     In addition to the name of each file, print the file type,
+     permissions, number of hard links, owner name, group name, size in
+     bytes, and timestamp (by default, the modification time).  For
+     files with a time more than six months old or in the future, the
+     timestamp contains the year instead of the time of day.  If the
+     timestamp contains today's date with the year rather than a time
+     of day, the file's time is in the future, which means you probably
+     have clock skew problems which may break programs like `make' that
+     rely on file times.
+
+     For each directory that is listed, preface the files with a line
+     `total BLOCKS', where BLOCKS is the total disk allocation for all
+     files in that directory.  The block size currently defaults to 1024
+     bytes, but this can be overridden (Note: Block size).  The
+     BLOCKS computed counts each hard link separately; this is arguably
+     a deficiency.
+
+     The permissions listed are similar to symbolic mode specifications
+     (Note: Symbolic Modes).  But `ls' combines multiple bits into the
+     third character of each set of permissions as follows:
+    `s'
+          If the setuid or setgid bit and the corresponding executable
+          bit are both set.
+
+    `S'
+          If the setuid or setgid bit is set but the corresponding
+          executable bit is not set.
+
+    `t'
+          If the sticky bit and the other-executable bit are both set.
+
+    `T'
+          If the sticky bit is set but the other-executable bit is not
+          set.
+
+    `x'
+          If the executable bit is set and none of the above apply.
+
+    `-'
+          Otherwise.
+
+     Following the permission bits is a single character that specifies
+     whether an alternate access method applies to the file.  When that
+     character is a space, there is no alternate access method.  When it
+     is a printing character (e.g., `+'), then there is such a method.
+
 ‘-R’
 ‘--recursive’
 List the contents of all directories recursively.
@@ -110,6 +177,28 @@ List the contents of all directories recursively.
 */
 @Command(command="ls", description="List information about the files (the current directory by default).")
 public class ListDirectoryCommand {
+	
+	
+	//-----------------------------------------------------------------
+	// Command constants
+	
+	// File size length, for long output format	
+	private static final int SIZE_LENGTH = 12;
+	// Owner name length, for long output format
+	private static final int OWNER_LENGTH = 15;
+	// Maximum hard links number to be shown
+	private static final Long MAX_HARD_LINKS = Long.valueOf(999l);
+	// English months date format
+	private static final DateFormat MODIFICATION_MONTH_FORMAT = new SimpleDateFormat("MMM", Locale.ENGLISH);
+	// Hours and minutes format
+	private static final DateFormat MODIFICATION_TIME_FORMAT = new SimpleDateFormat("HH:mm", Locale.ENGLISH);
+	// Windows executable files pattern
+	private static final Pattern EXECUTABLE_FILES_PATTERN = 
+		Pattern.compile("([\\.\\w]+)\\.exe|([\\.\\w]+)\\.bat|([\\.\\w]+)\\.cmd|([\\.\\w]+)\\.scr");
+	// Executable file (Windows)
+	private static final String WINDOWS_EXECUTABLE_PERMISSIONS = "rwxrwxrwx";
+	// Non executable file (Windows)
+	private static final String WINDOWS_NONEXECUTABLE_PERMISSIONS = "rw-rw-rw-";
 	
 	//-----------------------------------------------------------------
 	// Command parameters
@@ -239,6 +328,110 @@ public class ListDirectoryCommand {
 	// Prints the information of a file
 	private void printFile(PrintWriter out, FileResult f, Path currentPath) 
 			throws IOException {
+		PosixFileAttributes posixAttrs = f.getPosixAttrs();
+		String fileName = getFileName(f, currentPath, posixAttrs);
+		// Is it long?
+		if (longOutputFormat) {
+			// Long output format:
+			/*
+			 	1		file type (d/l/-)
+			 	9		permission mask
+				-1-
+				3		number of hard links
+				-1-
+				OWNER_LENGTH		owner name
+				-1-
+				OWNER_LENGTH		owner's group name
+				-1-
+				SIZE_LENGTH		file size
+				-1-
+				3		month of last modification date
+				-1-
+				2		day of last modification date
+				-1-
+				5		year of last modification date if not the same; hour if the same
+				-1-
+				X		name of the file
+			 */
+			BasicFileAttributes basicAttrs = f.getBasicAttrs();
+			FileOwnerAttributeView fileOwnerAttrs = f.getFileOwnerAttributeView();
+			
+			StringBuilder sb = new StringBuilder();
+			// File type
+			sb.append(f.getFile().isDirectory()?"d":(basicAttrs.isSymbolicLink()?"l":"-"));
+			// Permissions
+			if (posixAttrs != null) {
+				Set<PosixFilePermission> permissions = posixAttrs.permissions();
+				sb.append(permissions.contains(PosixFilePermission.OWNER_READ)?"r":"-");
+				sb.append(permissions.contains(PosixFilePermission.OWNER_WRITE)?"w":"-");
+				sb.append(permissions.contains(PosixFilePermission.OWNER_EXECUTE)?"x":"-");
+				sb.append(permissions.contains(PosixFilePermission.GROUP_READ)?"r":"-");
+				sb.append(permissions.contains(PosixFilePermission.GROUP_WRITE)?"w":"-");
+				sb.append(permissions.contains(PosixFilePermission.GROUP_EXECUTE)?"x":"-");
+				sb.append(permissions.contains(PosixFilePermission.OTHERS_READ)?"r":"-");
+				sb.append(permissions.contains(PosixFilePermission.OTHERS_WRITE)?"w":"-");
+				sb.append(permissions.contains(PosixFilePermission.OTHERS_EXECUTE)?"x":"-");
+			}
+			else {
+				// Assume Windows:
+				// rwxrwxrwx for executables
+				// rw-rw-rw- for the rest
+				Matcher matcher = EXECUTABLE_FILES_PATTERN.matcher(f.getFile().getName());
+				if (matcher.matches()) {
+					sb.append(WINDOWS_EXECUTABLE_PERMISSIONS);
+				}
+				else {
+					sb.append(WINDOWS_NONEXECUTABLE_PERMISSIONS);
+				}
+				
+			}
+			// Space
+			sb.append(" ");
+			// Number of hard links
+			Long hardLinks = f.getHardLinks();
+			if (hardLinks.compareTo(MAX_HARD_LINKS) > 0) {
+				hardLinks = MAX_HARD_LINKS;
+			}
+			// Space
+			sb.append(" ");
+			// Owner name
+			if (posixAttrs != null) {
+				sb.append(format(posixAttrs.owner().getName(), OWNER_LENGTH));
+			}
+			else {
+				sb.append(format(fileOwnerAttrs.getOwner().getName(), OWNER_LENGTH));
+			}
+			// Space
+			sb.append(" ");
+			// Owner's group name
+			if (posixAttrs != null) {
+				sb.append(format(posixAttrs.group().getName(), OWNER_LENGTH));
+			}
+			else {
+				sb.append(format(fileOwnerAttrs.getOwner().getName(), OWNER_LENGTH));
+			}
+			// Space
+			sb.append(" ");
+			// Size
+			sb.append(format(getSize(basicAttrs.size()), SIZE_LENGTH));
+			// Space
+			sb.append(" ");
+			// Last modification date
+			sb.append(formatModificationDate(basicAttrs.lastModifiedTime()));
+			// Space
+			sb.append(" ");
+			// File name
+			sb.append(fileName);
+			out.println(sb.toString());
+		}
+		else {
+			out.println(fileName);
+		}
+	}
+
+	// Renders the name of the file
+	private String getFileName(FileResult f, Path currentPath, PosixFileAttributes posixAttrs) 
+			throws IOException {
 		String fileName = f.getFile().getName();
 		if (currentPath.toFile().getCanonicalPath().equals(f.getFile().getCanonicalPath())) {
 			fileName = ".";
@@ -248,15 +441,106 @@ public class ListDirectoryCommand {
 					f.getFile().getCanonicalPath())) {
 			fileName = "..";
 		}
-		out.println(fileName);
+		// Should we color it?
+		if (color) {
+			if (f.getFile().isDirectory()) {
+				fileName = ANSIEscapeCode.paint(fileName, ANSIEscapeCode.BLUE);
+			}
+			else {
+				boolean executable = false;
+				if (posixAttrs != null) {
+					Set<PosixFilePermission> permissions = posixAttrs.permissions();
+					executable = 
+						permissions.contains(PosixFilePermission.OWNER_EXECUTE) |
+						permissions.contains(PosixFilePermission.GROUP_EXECUTE) |
+						permissions.contains(PosixFilePermission.OTHERS_EXECUTE);
+				}
+				else {
+					Matcher matcher = EXECUTABLE_FILES_PATTERN.matcher(f.getFile().getName());
+					executable = matcher.matches();
+				}
+				if (executable) {
+					fileName = ANSIEscapeCode.paint(fileName, ANSIEscapeCode.GREEN);
+				}
+			}
+		}
+		return fileName;
 	}
 	
+	// Properly formats the modification date for presentation
+	private String formatModificationDate(FileTime lastModifiedTime) {
+		/*
+			3		month of last modification date
+			-1-
+			2		day of last modification date
+			-1-
+			5		year of last modification date if not the same; hour if the same 
+		 */
+		StringBuilder sb = new StringBuilder();
+		Calendar modificationTime = Calendar.getInstance();
+		modificationTime.setTimeInMillis(lastModifiedTime.toInstant().toEpochMilli());
+		Calendar rightNow = Calendar.getInstance();
+		rightNow.setTime(new Date());
+		// Month in english
+		sb.append(MODIFICATION_MONTH_FORMAT.format(modificationTime.getTime()));
+		sb.append(" ");
+		sb.append(format(Integer.toString(modificationTime.get(Calendar.DAY_OF_MONTH)), 2));
+		sb.append(" ");
+		// Year if not the same that right now
+		if (modificationTime.get(Calendar.YEAR) != rightNow.get(Calendar.YEAR)) {
+			sb.append(format(Integer.toString(modificationTime.get(Calendar.YEAR)), 5));
+		}
+		else {
+			// Hour of modification
+			sb.append(format(MODIFICATION_TIME_FORMAT.format(modificationTime.getTime()), 5));
+		}
+				
+		return sb.toString();
+	}
+
+	// Gets the file size
+	private String getSize(long size) {
+		String ret = Long.toString(size);
+		if (humanReadable) {
+			ret = HumanReadableFormat.format(size);
+		}
+		return ret;
+	}
+
+	// This method trims if necessary to
+	//	get to the target length
+	private String format(String string, int length) {
+		return format(string, length, true);
+	}
+	
+	// This method trims or pad fills with spaces at left if necessary to
+	//	get to the target length
+	private String format(String string, int length, boolean fill) {
+		String ret = string;
+		if (string.length() > length) {
+			ret = string.substring(0, length);
+		}
+		else if (string.length() < length && fill) {
+			// Pad with spaces
+			ret = StringUtils.leftPad(string, length, " ");
+		}
+		return ret;
+	}
+
 	// Inner class to store the results
 	private class FileResult {
 		// File or directory
 		private File f = null;
 		// Children if f is a directory
 		private List<FileResult> children = null;
+		// POSIX attributes
+		private PosixFileAttributes posixAttrs = null;
+		// Basic attributes
+		private BasicFileAttributes basicAttrs = null;
+		// Hard links
+		private Long hardLinks = null;
+		// File owner attributes
+		private FileOwnerAttributeView fileOwnerAttrs = null;
 		
 		// Builds a file result on a File
 		public FileResult(File f) throws IOException {
@@ -272,6 +556,59 @@ public class ListDirectoryCommand {
 					this.children.add(new FileResult(child, recursive));
 				}
 			}
+		}
+
+		// Gathers the posix attributes for the long output format 
+		public PosixFileAttributes getPosixAttrs() {
+			if (posixAttrs == null) {
+				try {
+					posixAttrs = Files.getFileAttributeView(f.toPath(), PosixFileAttributeView.class)
+						.readAttributes();
+				}
+				catch(Exception ioe) {
+					// Just assume that the current file store does not support
+					//	POSIX attributes
+					posixAttrs = null;
+				}
+			}
+			return posixAttrs;
+		}
+		
+		// Gathers the file owner permissions
+		public FileOwnerAttributeView getFileOwnerAttributeView() {
+			if (fileOwnerAttrs == null) {
+				fileOwnerAttrs = Files.getFileAttributeView(f.toPath(), FileOwnerAttributeView.class);
+			}
+			return fileOwnerAttrs;
+		}
+		
+		// Gathers the basic attributes for the long output format 
+		public BasicFileAttributes getBasicAttrs() {
+			if (basicAttrs == null) {
+				try {
+					basicAttrs = Files.getFileAttributeView(f.toPath(), BasicFileAttributeView.class)
+						.readAttributes();
+				}
+				catch(IOException ioe) {
+					ioe.printStackTrace();
+				}
+			}
+			return basicAttrs;
+		}
+		
+		// Gathers the number of hard links for the long output format
+		public Long getHardLinks() {
+			if (hardLinks == null) {
+				try {
+					hardLinks = Long.valueOf(
+						java.nio.file.Files.getAttribute(f.toPath(), 
+								"unix:nlink").toString());
+				}
+				catch(Exception e) {
+					hardLinks = 1l;
+				}
+			}
+			return hardLinks;
 		}
 
 		/**

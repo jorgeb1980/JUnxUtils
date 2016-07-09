@@ -10,13 +10,12 @@ import java.lang.reflect.Method;
 import java.nio.charset.Charset;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Date;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
-import java.util.Set;
 
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.DefaultParser;
@@ -24,7 +23,6 @@ import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.Option;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
-import org.reflections.Reflections;
 
 /**
  * Common launcher for all the commands. 
@@ -156,6 +154,10 @@ public class EntryPoint {
 		}
 	}
 	
+	private static void printTime(Date initial, Date ending, String message) {
+		//System.err.println(message + " -> " + (ending.getTime() - initial.getTime()) + " mseg");
+	}
+	
 	/**
 	 * Executes a command with certain parameters and path.
 	 * @param command Name of the command to execute.
@@ -167,16 +169,25 @@ public class EntryPoint {
 			throws UnxException {
 		int ret = 0;
 		if (command != null) {
-			
+			Date beginLookForCommand = new Date();
 			Class<?> commandClass = lookForCommand(command);
+			//Class<?> commandClass = Class.forName(command);
+			Date endLookForCommand = new Date();
+			printTime(beginLookForCommand, endLookForCommand, "looking for command");
 			// Instantiate the proper command
 			Object theCommand = instantiateCommand(commandClass);
+			Date endInstantiateCommand = new Date();
+			printTime(endLookForCommand, endInstantiateCommand, "instantiate command");
 			// Look for an 'execute' method with the next arguments:
 			// Path - current path of the command
 			// PrintWriter - standard output
 			// PrintWriter - error output
 			Method execute = findExecuteMethod(commandClass);
+			Date endFindExecuteMethod = new Date();
+			printTime(endInstantiateCommand, endFindExecuteMethod, "find execute method");
 			ret = executeCommand(theCommand, execute, currentPath, commandArguments);
+			Date endExecuteCommand = new Date();
+			printTime(endFindExecuteMethod, endExecuteCommand, "execute command");
 		}
 		else {
 			throw new UnxException("Please specify which command you wish to launch", -1);
@@ -341,8 +352,8 @@ public class EntryPoint {
 				}
 				else {
 					options.addOption(
-						parameter.name().trim().length()==0?null:parameter.name(), 
-						parameter.longName().trim().length()==0?null:parameter.longName(), 
+						parameter.name(), 
+						parameter.longName().trim().length()==0?parameter.name():parameter.longName(), 
 						parameter.hasArg(), 
 						parameter.description());
 				}
@@ -355,20 +366,13 @@ public class EntryPoint {
 	@SuppressWarnings("rawtypes")
 	private static Class lookForCommand(String command) 
 			throws UnxException {
-		Set<Class<?>> commands = 
-				new Reflections("unxutils").getTypesAnnotatedWith(Command.class);
-		Class<?> ret = null;
-		Iterator<Class<?>> it = commands.iterator();
-		while (it.hasNext() && ret == null) {
-			Class<?> clazz = it.next();
-			Command annotation = clazz.getAnnotation(Command.class);
-			if (command.equals(annotation.command())) {
-				ret = clazz;
-			}
+		Class ret = null;
+		try {
+			ret = Class.forName(command);
 		}
-		if (ret == null) {
-			throw new UnxException("Could not instantiate the command").
-				setReturnCode(-1337);
+		catch(Exception e) {
+			e.printStackTrace();
+			throw new UnxException(e);
 		}
 		return ret;
 	}
