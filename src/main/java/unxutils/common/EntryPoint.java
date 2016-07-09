@@ -12,12 +12,10 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Date;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
-import java.util.Set;
 
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.DefaultParser;
@@ -25,7 +23,6 @@ import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.Option;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
-import org.reflections.Reflections;
 
 /**
  * Common launcher for all the commands. 
@@ -378,29 +375,6 @@ public class EntryPoint {
 			throw new UnxException(e);
 		}
 		return ret;
-//		Date initGetTypes = new Date();
-//		
-//		// Trying to improve performance:
-//		Set<Class<?>> commands = 
-//				new Reflections("unxutils").getTypesAnnotatedWith(Command.class);
-//		Date endGetTypes = new Date();
-//		printTime(initGetTypes, endGetTypes, "looking for annotated classes");
-//		Class<?> ret = null;
-//		Iterator<Class<?>> it = commands.iterator();
-//		while (it.hasNext() && ret == null) {
-//			Class<?> clazz = it.next();
-//			Command annotation = clazz.getAnnotation(Command.class);
-//			if (command.equals(annotation.command())) {
-//				ret = clazz;
-//			}
-//		}
-//		Date endRunClasses = new Date();
-//		printTime(endGetTypes, endRunClasses, "running through annotated classes");
-//		if (ret == null) {
-//			throw new UnxException("Could not instantiate the command").
-//				setReturnCode(-1337);
-//		}
-//		return ret;
 	}
 	
 	// Instantiates a command object
