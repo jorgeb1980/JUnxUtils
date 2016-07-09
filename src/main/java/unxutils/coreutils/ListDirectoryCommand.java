@@ -443,23 +443,25 @@ public class ListDirectoryCommand {
 		}
 		// Should we color it?
 		if (color) {
-			boolean executable = false;
-			if (posixAttrs != null) {
-				Set<PosixFilePermission> permissions = posixAttrs.permissions();
-				executable = 
-					permissions.contains(PosixFilePermission.OWNER_EXECUTE) |
-					permissions.contains(PosixFilePermission.GROUP_EXECUTE) |
-					permissions.contains(PosixFilePermission.OTHERS_EXECUTE);
+			if (f.getFile().isDirectory()) {
+				fileName = ANSIEscapeCode.paint(fileName, ANSIEscapeCode.BLUE);
 			}
 			else {
-				Matcher matcher = EXECUTABLE_FILES_PATTERN.matcher(f.getFile().getName());
-				executable = matcher.matches();
-			}
-			if (executable) {
-				fileName = ANSIEscapeCode.paint(fileName, ANSIEscapeCode.GREEN);
-			}
-			else if (f.getFile().isDirectory()) {
-				fileName = ANSIEscapeCode.paint(fileName, ANSIEscapeCode.BLUE);
+				boolean executable = false;
+				if (posixAttrs != null) {
+					Set<PosixFilePermission> permissions = posixAttrs.permissions();
+					executable = 
+						permissions.contains(PosixFilePermission.OWNER_EXECUTE) |
+						permissions.contains(PosixFilePermission.GROUP_EXECUTE) |
+						permissions.contains(PosixFilePermission.OTHERS_EXECUTE);
+				}
+				else {
+					Matcher matcher = EXECUTABLE_FILES_PATTERN.matcher(f.getFile().getName());
+					executable = matcher.matches();
+				}
+				if (executable) {
+					fileName = ANSIEscapeCode.paint(fileName, ANSIEscapeCode.GREEN);
+				}
 			}
 		}
 		return fileName;
