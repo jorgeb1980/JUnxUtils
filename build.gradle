@@ -60,9 +60,12 @@ task generateCommandScripts(dependsOn: copyRuntimeLibs) << {
 			// For every annotated class, create a .bat file based on the template 
 			Object annotation = command.getAnnotation(clazz);
 			String commandName = annotation.command()
+			// Optimization: let the entry point get straight the class name,
+			//	we are making the work in advance!
+			String commandClass = command.getCanonicalName()
 			File script = new File(scriptsDir, commandName + "." + extension)
 			script.createNewFile()
-			String formattedText = template.text.replaceAll("<<COMMAND_NAME>>", commandName)
+			String formattedText = template.text.replaceAll("<<COMMAND_CLASS>>", commandClass)
 			script.text = formattedText
 		}
 	}

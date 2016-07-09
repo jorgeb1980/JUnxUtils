@@ -174,6 +174,7 @@ public class EntryPoint {
 		if (command != null) {
 			Date beginLookForCommand = new Date();
 			Class<?> commandClass = lookForCommand(command);
+			//Class<?> commandClass = Class.forName(command);
 			Date endLookForCommand = new Date();
 			printTime(beginLookForCommand, endLookForCommand, "looking for command");
 			// Instantiate the proper command
@@ -368,29 +369,38 @@ public class EntryPoint {
 	@SuppressWarnings("rawtypes")
 	private static Class lookForCommand(String command) 
 			throws UnxException {
-		Date initGetTypes = new Date();
-		
-		// Trying to improve performance:
-		Set<Class<?>> commands = 
-				new Reflections("unxutils").getTypesAnnotatedWith(Command.class);
-		Date endGetTypes = new Date();
-		printTime(initGetTypes, endGetTypes, "looking for annotated classes");
-		Class<?> ret = null;
-		Iterator<Class<?>> it = commands.iterator();
-		while (it.hasNext() && ret == null) {
-			Class<?> clazz = it.next();
-			Command annotation = clazz.getAnnotation(Command.class);
-			if (command.equals(annotation.command())) {
-				ret = clazz;
-			}
+		Class ret = null;
+		try {
+			ret = Class.forName(command);
 		}
-		Date endRunClasses = new Date();
-		printTime(endGetTypes, endRunClasses, "running through annotated classes");
-		if (ret == null) {
-			throw new UnxException("Could not instantiate the command").
-				setReturnCode(-1337);
+		catch(Exception e) {
+			e.printStackTrace();
+			throw new UnxException(e);
 		}
 		return ret;
+//		Date initGetTypes = new Date();
+//		
+//		// Trying to improve performance:
+//		Set<Class<?>> commands = 
+//				new Reflections("unxutils").getTypesAnnotatedWith(Command.class);
+//		Date endGetTypes = new Date();
+//		printTime(initGetTypes, endGetTypes, "looking for annotated classes");
+//		Class<?> ret = null;
+//		Iterator<Class<?>> it = commands.iterator();
+//		while (it.hasNext() && ret == null) {
+//			Class<?> clazz = it.next();
+//			Command annotation = clazz.getAnnotation(Command.class);
+//			if (command.equals(annotation.command())) {
+//				ret = clazz;
+//			}
+//		}
+//		Date endRunClasses = new Date();
+//		printTime(endGetTypes, endRunClasses, "running through annotated classes");
+//		if (ret == null) {
+//			throw new UnxException("Could not instantiate the command").
+//				setReturnCode(-1337);
+//		}
+//		return ret;
 	}
 	
 	// Instantiates a command object
