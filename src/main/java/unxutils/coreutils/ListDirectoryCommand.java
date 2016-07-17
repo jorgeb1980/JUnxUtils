@@ -30,6 +30,7 @@ import org.apache.commons.lang.StringUtils;
 import unxutils.common.ANSIEscapeCode;
 import unxutils.common.Command;
 import unxutils.common.HumanReadableFormat;
+import unxutils.common.OptionalArgs;
 import unxutils.common.Parameter;
 import unxutils.common.UnxException;
 
@@ -262,6 +263,9 @@ public class ListDirectoryCommand {
 	@Parameter(name="l",
 			description="use a long listing format")
 	private Boolean longOutputFormat = Boolean.FALSE;
+	
+	@OptionalArgs(name="FILE")
+	private List<String> files;
 
 	//-----------------------------------------------------------------
 	// Command methods	
@@ -279,12 +283,23 @@ public class ListDirectoryCommand {
 		int ret = 0;
 		
 		try {
-			// Gather results, combining the appropriated filter options
-			List<FileResult> results = listFiles(currentPath);
-			// Render the result presentation, combining the appropriated
-			//	output options
-			for (FileResult f: results) {
-				printFileResult(standardOutput, currentPath, f);
+			List<Path> paths = new LinkedList<>();
+			if (files == null) {
+				paths.add(currentPath);
+			}
+			else {
+				for (String file: files) {
+					paths.add(new File(currentPath.toFile(), file).toPath());
+				}
+			}
+			for (Path path: paths) {
+				// Gather results, combining the appropriated filter options
+				List<FileResult> results = listFiles(path);
+				// Render the result presentation, combining the appropriated
+				//	output options
+				for (FileResult f: results) {
+					printFileResult(standardOutput, path, f);
+				}
 			}
 			
 			return ret;
@@ -798,4 +813,12 @@ public class ListDirectoryCommand {
 	public void setLongOutputFormat(Boolean longOutputFormat) {
 		this.longOutputFormat = longOutputFormat;
 	}
+
+	/**
+	 * @param files the files to set
+	 */
+	public void setFiles(List<String> files) {
+		this.files = files;
+	}
+	
 }

@@ -6,7 +6,8 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * Annotates a parameter for a command line call.
+ * Annotates a parameter for a command line call.  It indicates an option 
+ * for the command call.
  */
 @Target(ElementType.FIELD)
 @Retention(RetentionPolicy.RUNTIME)
