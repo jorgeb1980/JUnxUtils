@@ -317,8 +317,7 @@ public class ListDirectoryCommand {
 	
 	// List the files under the current path
 	private List<FileResult> listFiles(Path path) throws IOException {
-		List<FileResult> ret = new LinkedList<>();
-		
+		List<FileResult> ret = new LinkedList<>();		
 		if (all) {
 			ret.add(new FileResult(path.toFile()));
 		}

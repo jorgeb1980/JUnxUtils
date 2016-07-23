@@ -54,6 +54,7 @@ public class EntryPoint {
 	 * @param args Command arguments
 	 */
 	public static void main(String[] args) {
+		Date startEntryPoint = new Date();
 		int ret = 0;
 		try {
 			Path currentPath = Paths.get("").toAbsolutePath();	
@@ -73,6 +74,8 @@ public class EntryPoint {
 			System.err.println(unxe.getMessage());
 			System.exit(unxe.getReturnCode());
 		}
+		Date endEntryPoint = new Date();
+		printTime(startEntryPoint, endEntryPoint, "Total time");
 		// The command returned some exit code, this is our return code
 		System.exit((Integer) ret);			
 	}
