@@ -268,6 +268,12 @@ public class ListDirectoryCommand {
 	private List<String> files;
 
 	//-----------------------------------------------------------------
+	// Command variables
+	
+	// Reported directory headers
+	private List<Path> reportedDirectoryPaths = new LinkedList<>();
+	
+	//-----------------------------------------------------------------
 	// Command methods	
 	
 	/**
@@ -298,7 +304,7 @@ public class ListDirectoryCommand {
 				// Render the result presentation, combining the appropriated
 				//	output options
 				for (FileResult f: results) {
-					printFileResult(standardOutput, path, f);
+					printFileResult(paths.size() > 1, standardOutput, path, currentPath, f);
 				}
 			}
 			
@@ -311,8 +317,7 @@ public class ListDirectoryCommand {
 	
 	// List the files under the current path
 	private List<FileResult> listFiles(Path path) throws IOException {
-		List<FileResult> ret = new LinkedList<>();
-		
+		List<FileResult> ret = new LinkedList<>();		
 		if (all) {
 			ret.add(new FileResult(path.toFile()));
 		}
@@ -326,16 +331,37 @@ public class ListDirectoryCommand {
 		return ret;
 	}
 	
+	// Calculates newPath relative to originalPath, if possible
+	// getRelativePath(/etc, /etc/openssh) -> openssh
+	// getRelativePath(/etc, /opt/ibm) -> /opt/ibm
+	private String getRelativePath(Path originalPath, Path newPath) {
+		String ret = newPath.toString();
+		if (newPath.toString().contains(originalPath.toString())) {
+			ret = newPath.toString().replace(originalPath.toString(), "");
+			// Remove non character at the begin
+			if (ret.startsWith(System.getProperty("file.separator"))) {
+				ret = ret.substring(1);
+			}
+		}
+		return ret;
+	}
+	
 	// Presentation of a file result relative to some path (maybe nested)
-	private void printFileResult(PrintWriter out, Path path, FileResult f) 
+	private void printFileResult(boolean manyFiles, PrintWriter out, Path path, Path currentPath, FileResult f) 
 			throws IOException {
+		// We write only once every directory header
+		if (manyFiles 
+				&& currentPath.toFile().isDirectory() 
+				&& !reportedDirectoryPaths.contains(path)) {
+			out.println(getRelativePath(currentPath, path) + ":");
+			reportedDirectoryPaths.add(path);
+		}
 		if (f.getChildren() == null) {
 			printFile(out, f, path);
 		}
-		else {
-			out.println(f.getFile().getName() + ":");
+		else {			
 			for (FileResult child: f.getChildren()) {
-				printFileResult(out, path, child);
+				printFileResult(true, out, path, currentPath, child);
 			}
 		}
 	}
