@@ -10,6 +10,7 @@ import java.nio.file.Path;
 
 import unxutils.common.Command;
 import unxutils.common.HumanReadableFormat;
+import unxutils.common.Parameter;
 import unxutils.common.UnxException;
 import unxutils.common.Utils;
 
@@ -195,13 +196,22 @@ public class FreeDiskSpaceCommand {
 	//-----------------------------------------------------------------
 	// Command constants
 	
-	// Print widths
-	
-	// Filesystem name
+	// Column widths
 	private static final int WIDTH_FILESYSTEM = 16;
-	// Sizes
-	private static final int WIDTH_SIZE = 12;
+	private static final int WIDTH_TYPE = 8;
+	private static final int WIDTH_SIZE = 16;
+	private static final int WIDTH_HUMAN_SIZE = 10;
 	private static final int WIDTH_PERCENTAGE = 6;
+	
+	//-----------------------------------------------------------------
+	// Command parameters
+	
+	@Parameter(name="T", longName="print-type", description="Print each file system’s type.")
+	private Boolean printType = Boolean.FALSE;
+	@Parameter(name="h",
+			longName="human-readable", 
+			description="print human readable sizes (e.g., 1K 234M 2G)")
+	private Boolean humanReadable = Boolean.FALSE;
 	
 	//-----------------------------------------------------------------
 	// Command methods	
@@ -232,9 +242,12 @@ public class FreeDiskSpaceCommand {
 	// Print column headers
 	private void printHeaders(PrintWriter stdOutput) {
 		stdOutput.print(Utils.format("File system", WIDTH_FILESYSTEM));
-		stdOutput.print(Utils.format("Size", WIDTH_SIZE));
-		stdOutput.print(Utils.format("Used", WIDTH_SIZE));
-		stdOutput.print(Utils.format("Available", WIDTH_SIZE));
+		if (printType) {
+			stdOutput.print(Utils.format("Type", WIDTH_TYPE));
+		}
+		stdOutput.print(Utils.format("Size", humanReadable?WIDTH_HUMAN_SIZE:WIDTH_SIZE));
+		stdOutput.print(Utils.format("Used", humanReadable?WIDTH_HUMAN_SIZE:WIDTH_SIZE));
+		stdOutput.print(Utils.format("Available", humanReadable?WIDTH_HUMAN_SIZE:WIDTH_SIZE));
 		stdOutput.print(Utils.format("Use %", WIDTH_PERCENTAGE));
 		stdOutput.println();
 	}
@@ -249,11 +262,42 @@ public class FreeDiskSpaceCommand {
 		BigDecimal usage = usedSize.divide(totalSize, 2, BigDecimal.ROUND_FLOOR).multiply(new BigDecimal(100));
 		
 		stdOutput.print(Utils.format(fs.toString(), WIDTH_FILESYSTEM));
-		stdOutput.print(Utils.format(HumanReadableFormat.format(totalSize), WIDTH_SIZE));
-		stdOutput.print(Utils.format(HumanReadableFormat.format(usedSize), WIDTH_SIZE));
-		stdOutput.print(Utils.format(HumanReadableFormat.format(availableSize), WIDTH_SIZE));
-		stdOutput.print(Utils.format(HumanReadableFormat.format(usage), WIDTH_PERCENTAGE));
+		if (printType) {
+			stdOutput.print(Utils.format(fs.type(), WIDTH_TYPE));
+		}
+		stdOutput.print(printNumber(totalSize));
+		stdOutput.print(printNumber(usedSize));
+		stdOutput.print(printNumber(availableSize));
+		stdOutput.print(Utils.format(usage.toString(), WIDTH_PERCENTAGE));
 		
 		stdOutput.println();
 	}
+	
+	// Prints a number according to options
+	private String printNumber(BigDecimal n) {
+		String ret = "";
+		if (humanReadable) {
+			ret = Utils.format(HumanReadableFormat.format(n), WIDTH_HUMAN_SIZE);
+		}
+		else {
+			ret = Utils.format(n.toString(), WIDTH_SIZE);
+		}
+		return ret;
+	}
+
+	/**
+	 * @param printType the printType to set
+	 */
+	public void setPrintType(Boolean printType) {
+		this.printType = printType;
+	}
+
+	/**
+	 * @param humanReadable the humanReadable to set
+	 */
+	public void setHumanReadable(Boolean humanReadable) {
+		this.humanReadable = humanReadable;
+	}
+	
+	
 }
