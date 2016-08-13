@@ -71,6 +71,7 @@ public class EntryPoint {
 			}
 		}
 		catch(UnxException unxe) {
+			unxe.printStackTrace();
 			System.err.println(unxe.getMessage());
 			System.exit(unxe.getReturnCode());
 		}

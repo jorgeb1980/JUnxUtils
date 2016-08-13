@@ -259,7 +259,10 @@ public class FreeDiskSpaceCommand {
 			new BigDecimal(fs.getTotalSpace()).
 				subtract(new BigDecimal(fs.getUnallocatedSpace()));
 		BigDecimal availableSize = new BigDecimal(fs.getUnallocatedSpace());
-		BigDecimal usage = usedSize.divide(totalSize, 2, BigDecimal.ROUND_FLOOR).multiply(new BigDecimal(100));
+		BigDecimal usage = BigDecimal.ZERO;
+		if (!totalSize.equals(BigDecimal.ZERO)) {
+			usage = usedSize.divide(totalSize, 2, BigDecimal.ROUND_FLOOR).multiply(new BigDecimal(100));
+		}
 		
 		stdOutput.print(Utils.format(fs.toString(), WIDTH_FILESYSTEM));
 		if (printType) {
