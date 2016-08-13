@@ -458,7 +458,7 @@ public class EntryPoint {
 		}
 	}
 
-	// Returns the first argument
+	/** Returns the first argument */
 	public static String head(String[] args) {
 		String ret = null;
 		if (args !=  null && args.length > 0) {
@@ -467,7 +467,7 @@ public class EntryPoint {
 		return ret;
 	}
 	
-	// Returns the second and later arguments
+	/** Returns the second and later arguments*/
 	public static List<String> tail(String[] args) {
 		List<String> ret  = new LinkedList<>();
 		if (args != null && args.length > 1) {

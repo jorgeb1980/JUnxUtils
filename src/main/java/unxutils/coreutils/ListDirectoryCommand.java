@@ -4,6 +4,7 @@ import java.io.File;
 import java.io.FileFilter;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.nio.file.AccessDeniedException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.attribute.BasicFileAttributeView;
@@ -184,9 +185,9 @@ public class ListDirectoryCommand {
 	// Command constants
 	
 	// File size length, for long output format	
-	private static final int SIZE_LENGTH = 12;
+	private static final int SIZE_LENGTH = 8;
 	// Owner name length, for long output format
-	private static final int OWNER_LENGTH = 15;
+	private static final int OWNER_LENGTH = 12;
 	// Maximum hard links number to be shown
 	private static final Long MAX_HARD_LINKS = Long.valueOf(999l);
 	// English months date format
@@ -299,12 +300,18 @@ public class ListDirectoryCommand {
 				}
 			}
 			for (Path path: paths) {
-				// Gather results, combining the appropriated filter options
-				List<FileResult> results = listFiles(path);
-				// Render the result presentation, combining the appropriated
-				//	output options
-				for (FileResult f: results) {
-					printFileResult(paths.size() > 1, standardOutput, path, currentPath, f);
+				try {
+					// Gather results, combining the appropriated filter options
+					List<FileResult> results = listFiles(path);
+					// Render the result presentation, combining the appropriated
+					//	output options
+					for (FileResult f: results) {
+						printFileResult(paths.size() > 1, standardOutput, path, currentPath, f);
+					}
+				}
+				catch(AccessDeniedException e) {
+					// Cannot enter here...
+					errorOutput.println(e.getMessage());
 				}
 			}
 			
