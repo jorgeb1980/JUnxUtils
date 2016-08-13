@@ -2,6 +2,7 @@ package unxutils.coreutils;
 
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.math.BigDecimal;
 import java.nio.file.FileStore;
 import java.nio.file.FileSystem;
 import java.nio.file.FileSystems;
@@ -10,6 +11,7 @@ import java.nio.file.Path;
 import unxutils.common.Command;
 import unxutils.common.HumanReadableFormat;
 import unxutils.common.UnxException;
+import unxutils.common.Utils;
 
 /**
  * <b>Program documentation</b><br>
@@ -191,29 +193,67 @@ Ignored; for compatibility with System V versions of df.
 public class FreeDiskSpaceCommand {
 
 	//-----------------------------------------------------------------
+	// Command constants
+	
+	// Print widths
+	
+	// Filesystem name
+	private static final int WIDTH_FILESYSTEM = 16;
+	// Sizes
+	private static final int WIDTH_SIZE = 12;
+	private static final int WIDTH_PERCENTAGE = 6;
+	
+	//-----------------------------------------------------------------
 	// Command methods	
 	
 	/**
-	 * Builds an ls command.
+	 * Builds a df command.
 	 */
 	public FreeDiskSpaceCommand() {	}
 
-	// Entry point for ls
+	// Entry point for df
 	public int execute(
 			final Path currentPath, 
 			PrintWriter standardOutput, 
 			PrintWriter errorOutput) throws UnxException {
 		try {
 			FileSystem fileSystem = FileSystems.getDefault();
+			printHeaders(standardOutput);
 			for (FileStore fs: fileSystem.getFileStores()) {
-				System.out.println(fs.toString());
-				System.out.println(HumanReadableFormat.format(fs.getUsableSpace()));
-				System.out.println(HumanReadableFormat.format(fs.getTotalSpace()));
+				renderFS(fs, standardOutput);
 			}
 			return 0;
 		}
 		catch (IOException ioe) {
 			throw new UnxException(ioe);
 		}
+	}
+	
+	// Print column headers
+	private void printHeaders(PrintWriter stdOutput) {
+		stdOutput.print(Utils.format("File system", WIDTH_FILESYSTEM));
+		stdOutput.print(Utils.format("Size", WIDTH_SIZE));
+		stdOutput.print(Utils.format("Used", WIDTH_SIZE));
+		stdOutput.print(Utils.format("Available", WIDTH_SIZE));
+		stdOutput.print(Utils.format("Use %", WIDTH_PERCENTAGE));
+		stdOutput.println();
+	}
+	// Renders the information of a file system
+	private void renderFS(FileStore fs, PrintWriter stdOutput) throws IOException{
+		// Filesystem, total size, used, available, usage%
+		BigDecimal totalSize = new BigDecimal(fs.getTotalSpace());
+		BigDecimal usedSize = 
+			new BigDecimal(fs.getTotalSpace()).
+				subtract(new BigDecimal(fs.getUnallocatedSpace()));
+		BigDecimal availableSize = new BigDecimal(fs.getUnallocatedSpace());
+		BigDecimal usage = usedSize.divide(totalSize, 2, BigDecimal.ROUND_FLOOR).multiply(new BigDecimal(100));
+		
+		stdOutput.print(Utils.format(fs.toString(), WIDTH_FILESYSTEM));
+		stdOutput.print(Utils.format(HumanReadableFormat.format(totalSize), WIDTH_SIZE));
+		stdOutput.print(Utils.format(HumanReadableFormat.format(usedSize), WIDTH_SIZE));
+		stdOutput.print(Utils.format(HumanReadableFormat.format(availableSize), WIDTH_SIZE));
+		stdOutput.print(Utils.format(HumanReadableFormat.format(usage), WIDTH_PERCENTAGE));
+		
+		stdOutput.println();
 	}
 }

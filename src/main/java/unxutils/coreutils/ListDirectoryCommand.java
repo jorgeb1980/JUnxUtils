@@ -26,14 +26,13 @@ import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import org.apache.commons.lang.StringUtils;
-
 import unxutils.common.ANSIEscapeCode;
 import unxutils.common.Command;
 import unxutils.common.HumanReadableFormat;
 import unxutils.common.OptionalArgs;
 import unxutils.common.Parameter;
 import unxutils.common.UnxException;
+import unxutils.common.Utils;
 
 /**
 <b>Program documentation</b><br>
@@ -444,24 +443,24 @@ public class ListDirectoryCommand {
 			sb.append(" ");
 			// Owner name
 			if (posixAttrs != null) {
-				sb.append(format(posixAttrs.owner().getName(), OWNER_LENGTH));
+				sb.append(Utils.format(posixAttrs.owner().getName(), OWNER_LENGTH));
 			}
 			else {
-				sb.append(format(fileOwnerAttrs.getOwner().getName(), OWNER_LENGTH));
+				sb.append(Utils.format(fileOwnerAttrs.getOwner().getName(), OWNER_LENGTH));
 			}
 			// Space
 			sb.append(" ");
 			// Owner's group name
 			if (posixAttrs != null) {
-				sb.append(format(posixAttrs.group().getName(), OWNER_LENGTH));
+				sb.append(Utils.format(posixAttrs.group().getName(), OWNER_LENGTH));
 			}
 			else {
-				sb.append(format(fileOwnerAttrs.getOwner().getName(), OWNER_LENGTH));
+				sb.append(Utils.format(fileOwnerAttrs.getOwner().getName(), OWNER_LENGTH));
 			}
 			// Space
 			sb.append(" ");
 			// Size
-			sb.append(format(getSize(basicAttrs.size()), SIZE_LENGTH));
+			sb.append(Utils.format(getSize(basicAttrs.size()), SIZE_LENGTH));
 			// Space
 			sb.append(" ");
 			// Last modification date
@@ -532,15 +531,15 @@ public class ListDirectoryCommand {
 		// Month in english
 		sb.append(MODIFICATION_MONTH_FORMAT.format(modificationTime.getTime()));
 		sb.append(" ");
-		sb.append(format(Integer.toString(modificationTime.get(Calendar.DAY_OF_MONTH)), 2));
+		sb.append(Utils.format(Integer.toString(modificationTime.get(Calendar.DAY_OF_MONTH)), 2));
 		sb.append(" ");
 		// Year if not the same that right now
 		if (modificationTime.get(Calendar.YEAR) != rightNow.get(Calendar.YEAR)) {
-			sb.append(format(Integer.toString(modificationTime.get(Calendar.YEAR)), 5));
+			sb.append(Utils.format(Integer.toString(modificationTime.get(Calendar.YEAR)), 5));
 		}
 		else {
 			// Hour of modification
-			sb.append(format(MODIFICATION_TIME_FORMAT.format(modificationTime.getTime()), 5));
+			sb.append(Utils.format(MODIFICATION_TIME_FORMAT.format(modificationTime.getTime()), 5));
 		}
 				
 		return sb.toString();
@@ -554,27 +553,7 @@ public class ListDirectoryCommand {
 		}
 		return ret;
 	}
-
-	// This method trims if necessary to
-	//	get to the target length
-	private String format(String string, int length) {
-		return format(string, length, true);
-	}
 	
-	// This method trims or pad fills with spaces at left if necessary to
-	//	get to the target length
-	private String format(String string, int length, boolean fill) {
-		String ret = string;
-		if (string.length() > length) {
-			ret = string.substring(0, length);
-		}
-		else if (string.length() < length && fill) {
-			// Pad with spaces
-			ret = StringUtils.leftPad(string, length, " ");
-		}
-		return ret;
-	}
-
 	// Inner class to store the results
 	private class FileResult {
 		// File or directory
