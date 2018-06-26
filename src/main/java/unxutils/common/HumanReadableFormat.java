@@ -1,6 +1,7 @@
 package unxutils.common;
 
 import java.math.BigDecimal;
+import java.util.Locale;
 
 /**
  * This class allows to print a long integer in a human readable format.
@@ -12,6 +13,8 @@ public class HumanReadableFormat {
 	
 	// Kilobytes
 	private static final int UNIT = 1024;
+	// Decimal point format
+	private static final Locale LOCALE = new Locale("es");
 	
 	//--------------------------------------------------------------------
 	// Class methods
@@ -44,6 +47,6 @@ public class HumanReadableFormat {
 		if (bigDecimal.compareTo(new BigDecimal(UNIT)) < 0) return bigDecimal.toString();
 		int exp = (int) (Math.log(bytes) / Math.log(UNIT));
 	    String pre = Character.toString("KMGTPE".charAt(exp-1));
-	    return String.format("%.1f%s", bytes / Math.pow(UNIT, exp), pre);
+	    return String.format(LOCALE, "%.1f%s", bytes / Math.pow(UNIT, exp), pre);
 	}
 }
