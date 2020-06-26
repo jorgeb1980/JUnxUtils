@@ -2,6 +2,7 @@ package unxutils.coreutils;
 
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.math.BigDecimal;
 import java.nio.file.FileStore;
 import java.nio.file.FileSystem;
 import java.nio.file.FileSystems;
@@ -9,7 +10,9 @@ import java.nio.file.Path;
 
 import unxutils.common.Command;
 import unxutils.common.HumanReadableFormat;
+import unxutils.common.Parameter;
 import unxutils.common.UnxException;
+import unxutils.common.Utils;
 
 /**
  * <b>Program documentation</b><br>
@@ -191,24 +194,43 @@ Ignored; for compatibility with System V versions of df.
 public class FreeDiskSpaceCommand {
 
 	//-----------------------------------------------------------------
+	// Command constants
+	
+	// Column widths
+	private static final int WIDTH_FILESYSTEM = 16;
+	private static final int WIDTH_TYPE = 8;
+	private static final int WIDTH_SIZE = 16;
+	private static final int WIDTH_HUMAN_SIZE = 10;
+	private static final int WIDTH_PERCENTAGE = 6;
+	
+	//-----------------------------------------------------------------
+	// Command parameters
+	
+	@Parameter(name="T", longName="print-type", description="Print each file system’s type.")
+	private Boolean printType = Boolean.FALSE;
+	@Parameter(name="h",
+			longName="human-readable", 
+			description="print human readable sizes (e.g., 1K 234M 2G)")
+	private Boolean humanReadable = Boolean.FALSE;
+	
+	//-----------------------------------------------------------------
 	// Command methods	
 	
 	/**
-	 * Builds an ls command.
+	 * Builds a df command.
 	 */
 	public FreeDiskSpaceCommand() {	}
 
-	// Entry point for ls
+	// Entry point for df
 	public int execute(
 			final Path currentPath, 
 			PrintWriter standardOutput, 
 			PrintWriter errorOutput) throws UnxException {
 		try {
 			FileSystem fileSystem = FileSystems.getDefault();
+			printHeaders(standardOutput);
 			for (FileStore fs: fileSystem.getFileStores()) {
-				System.out.println(fs.toString());
-				System.out.println(HumanReadableFormat.format(fs.getUsableSpace()));
-				System.out.println(HumanReadableFormat.format(fs.getTotalSpace()));
+				renderFS(fs, standardOutput);
 			}
 			return 0;
 		}
@@ -216,4 +238,69 @@ public class FreeDiskSpaceCommand {
 			throw new UnxException(ioe);
 		}
 	}
+	
+	// Print column headers
+	private void printHeaders(PrintWriter stdOutput) {
+		stdOutput.print(Utils.format("File system", WIDTH_FILESYSTEM));
+		if (printType) {
+			stdOutput.print(Utils.format("Type", WIDTH_TYPE));
+		}
+		stdOutput.print(Utils.format("Size", humanReadable?WIDTH_HUMAN_SIZE:WIDTH_SIZE));
+		stdOutput.print(Utils.format("Used", humanReadable?WIDTH_HUMAN_SIZE:WIDTH_SIZE));
+		stdOutput.print(Utils.format("Available", humanReadable?WIDTH_HUMAN_SIZE:WIDTH_SIZE));
+		stdOutput.print(Utils.format("Use %", WIDTH_PERCENTAGE));
+		stdOutput.println();
+	}
+	// Renders the information of a file system
+	private void renderFS(FileStore fs, PrintWriter stdOutput) throws IOException{
+		// Filesystem, total size, used, available, usage%
+		BigDecimal totalSize = new BigDecimal(fs.getTotalSpace());
+		BigDecimal usedSize = 
+			new BigDecimal(fs.getTotalSpace()).
+				subtract(new BigDecimal(fs.getUnallocatedSpace()));
+		BigDecimal availableSize = new BigDecimal(fs.getUnallocatedSpace());
+		BigDecimal usage = BigDecimal.ZERO;
+		if (!totalSize.equals(BigDecimal.ZERO)) {
+			usage = usedSize.divide(totalSize, 2, BigDecimal.ROUND_FLOOR).multiply(new BigDecimal(100));
+		}
+		
+		stdOutput.print(Utils.format(fs.toString(), WIDTH_FILESYSTEM));
+		if (printType) {
+			stdOutput.print(Utils.format(fs.type(), WIDTH_TYPE));
+		}
+		stdOutput.print(printNumber(totalSize));
+		stdOutput.print(printNumber(usedSize));
+		stdOutput.print(printNumber(availableSize));
+		stdOutput.print(Utils.format(usage.toString(), WIDTH_PERCENTAGE));
+		
+		stdOutput.println();
+	}
+	
+	// Prints a number according to options
+	private String printNumber(BigDecimal n) {
+		String ret = "";
+		if (humanReadable) {
+			ret = Utils.format(HumanReadableFormat.format(n), WIDTH_HUMAN_SIZE);
+		}
+		else {
+			ret = Utils.format(n.toString(), WIDTH_SIZE);
+		}
+		return ret;
+	}
+
+	/**
+	 * @param printType the printType to set
+	 */
+	public void setPrintType(Boolean printType) {
+		this.printType = printType;
+	}
+
+	/**
+	 * @param humanReadable the humanReadable to set
+	 */
+	public void setHumanReadable(Boolean humanReadable) {
+		this.humanReadable = humanReadable;
+	}
+	
+	
 }

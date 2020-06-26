@@ -1,4 +1,5 @@
 apply plugin: "java"
+apply plugin: "jacoco"
 
 version = 0.1
 sourceCompatibility = 1.8
@@ -27,7 +28,7 @@ buildscript {
 	dependencies {		
 		classpath 'org.reflections:reflections:0.9.10'
 		classpath 'commons-cli:commons-cli:1.3.1'
-		classpath files(['build/classes/main'])
+		classpath files(['build/classes/java/main'])
 	}
 }
 
@@ -46,27 +47,47 @@ task copyRuntimeLibs(type: Copy, dependsOn: build) {
 }
 
 // This method generates the appropriate scripts for all the included commands
-task generateCommandScripts(dependsOn: copyRuntimeLibs) << {
-	Class clazz = Class.forName("unxutils.common.Command")
-	// Scan for the annotated classes
-	Set<Class<?>> commands = 
-		new org.reflections.Reflections("unxutils").getTypesAnnotatedWith(clazz);
-	File scriptsDir = new File(buildDir, "scripts")
-	scriptsDir.mkdirs()
-	for (File template: new File(projectDir, "scriptTemplates").listFiles()) {
-		//File template = new File(projectDir, "scriptTemplates/template.bat")
-		for(Class<?> command: commands) {
-			String extension = template.getName().substring(template.getName().lastIndexOf(".") + 1)
-			// For every annotated class, create a .bat file based on the template 
-			Object annotation = command.getAnnotation(clazz);
-			String commandName = annotation.command()
-			// Optimization: let the entry point get straight the class name,
-			//	we are making the work in advance!
-			String commandClass = command.getCanonicalName()
-			File script = new File(scriptsDir, commandName + "." + extension)
-			script.createNewFile()
-			String formattedText = template.text.replaceAll("<<COMMAND_CLASS>>", commandClass)
-			script.text = formattedText
+task generateCommandScripts(dependsOn: copyRuntimeLibs) {
+	group = "Deliveryz"
+	description = "Builds the scripts for every command defined in the code"
+	doLast {
+		def makeExecutable = { File f ->
+			java.nio.file.Path path = f.toPath();
+			Set<java.nio.file.attribute.PosixFilePermission> perms = 
+				java.nio.file.Files.readAttributes(path,java.nio.file.attribute.PosixFileAttributes.class).permissions();
+
+			perms.add(java.nio.file.attribute.PosixFilePermission.OWNER_WRITE);
+			perms.add(java.nio.file.attribute.PosixFilePermission.OWNER_READ);
+			perms.add(java.nio.file.attribute.PosixFilePermission.OWNER_EXECUTE);
+			perms.add(java.nio.file.attribute.PosixFilePermission.GROUP_READ);
+			perms.add(java.nio.file.attribute.PosixFilePermission.GROUP_EXECUTE);
+			perms.add(java.nio.file.attribute.PosixFilePermission.OTHERS_READ);
+			perms.add(java.nio.file.attribute.PosixFilePermission.OTHERS_EXECUTE);
+			java.nio.file.Files.setPosixFilePermissions(path, perms);
+		}
+
+		Class clazz = Class.forName("unxutils.common.Command")
+		// Scan for the annotated classes
+		Set<Class<?>> commands = 
+			new org.reflections.Reflections("unxutils").getTypesAnnotatedWith(clazz);
+		File scriptsDir = new File(buildDir, "scripts")
+		scriptsDir.mkdirs()
+		for (File template: new File(projectDir, "scriptTemplates").listFiles()) {
+			//File template = new File(projectDir, "scriptTemplates/template.bat")
+			for(Class<?> command: commands) {
+				String extension = template.getName().substring(template.getName().lastIndexOf(".") + 1)
+				// For every annotated class, create a .bat file based on the template 
+				Object annotation = command.getAnnotation(clazz);
+				String commandName = annotation.command()
+				// Optimization: let the entry point get straight the class name,
+				//	we are making the work in advance!
+				String commandClass = command.getCanonicalName()
+				File script = new File(scriptsDir, commandName + "." + extension)
+				script.createNewFile()
+				String formattedText = template.text.replaceAll("<<COMMAND_CLASS>>", commandClass)
+				script.text = formattedText
+				makeExecutable(script)
+			}
 		}
 	}
 }
