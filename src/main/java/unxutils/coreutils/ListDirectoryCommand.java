@@ -26,13 +26,15 @@ import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import unxutils.common.ANSIEscapeCode;
-import unxutils.common.Command;
-import unxutils.common.HumanReadableFormat;
-import unxutils.common.OptionalArgs;
-import unxutils.common.Parameter;
-import unxutils.common.UnxException;
-import unxutils.common.Utils;
+import cli.ANSIEscapeCode;
+import cli.ExecutionContext;
+import cli.annotations.Command;
+import cli.annotations.OptionalArgs;
+import cli.annotations.Parameter;
+import cli.annotations.Run;
+import unxutils.format.HumanReadableFormat;
+
+import static unxutils.format.Format.format;
 
 /**
 <b>Program documentation</b><br>
@@ -43,9 +45,9 @@ Options and file arguments can be intermixed arbitrarily, as usual.
 
 For non-option command-line arguments that are directories, by default ls lists 
 the contents of directories, not recursively, and omitting files with names 
-beginning with ‘.’. For other non-option arguments, by default ls lists just the 
+beginning with ï¿½.ï¿½. For other non-option arguments, by default ls lists just the 
 file name. If no non-option argument is specified, ls operates on the current 
-directory, acting as if it had been invoked with a single argument of ‘.’.
+directory, acting as if it had been invoked with a single argument of ï¿½.ï¿½.
 
 By default, the output is sorted alphabetically, according to the locale settings 
 in effect.3 If standard output is a terminal, the output is in columns (sorted 
@@ -56,7 +58,7 @@ Because ls is such a fundamental program, it has accumulated many options over
 the years. They are described in the subsections below; within each section, 
 options are listed alphabetically (ignoring case). The division of options into 
 the subsections is not absolute, since some options affect more than one aspect 
-of ls’s operation.
+of lsï¿½s operation.
 
 Exit status:
 
@@ -75,49 +77,49 @@ Exit status:
 {@code
 These options determine which files ls lists information for. By default, ls 
 lists files and the contents of any directories on the command line, except that 
-in directories it ignores files whose names start with ‘.’.
+in directories it ignores files whose names start with ï¿½.ï¿½.
 
-‘-a’
-‘--all’
-In directories, do not ignore file names that start with ‘.’.
+ï¿½-aï¿½
+ï¿½--allï¿½
+In directories, do not ignore file names that start with ï¿½.ï¿½.
 
-‘-A’
-‘--almost-all’
-In directories, do not ignore all file names that start with ‘.’; ignore only . 
+ï¿½-Aï¿½
+ï¿½--almost-allï¿½
+In directories, do not ignore all file names that start with ï¿½.ï¿½; ignore only . 
 and ... The --all (-a) option overrides this option.
 
-‘-B’
-‘--ignore-backups’
-In directories, ignore files that end with ‘~’. This option is equivalent to 
-‘--ignore='*~' --ignore='.*~'’.
+ï¿½-Bï¿½
+ï¿½--ignore-backupsï¿½
+In directories, ignore files that end with ï¿½~ï¿½. This option is equivalent to 
+ï¿½--ignore='*~' --ignore='.*~'ï¿½.
 
-‘--group-directories-first’
+ï¿½--group-directories-firstï¿½
 Group all the directories before the files and then sort the directories and the 
-files separately using the selected sort key (see –sort option). That is, this 
-option specifies a primary sort key, and the –sort option specifies a secondary 
+files separately using the selected sort key (see ï¿½sort option). That is, this 
+option specifies a primary sort key, and the ï¿½sort option specifies a secondary 
 key. However, any use of --sort=none (-U) disables this option altogether.
 
-‘--hide=PATTERN’
+ï¿½--hide=PATTERNï¿½
 In directories, ignore files whose names match the shell pattern pattern, unless 
 the --all (-a) or --almost-all (-A) is also given. This option acts like 
 --ignore=pattern except that it has no effect if --all (-a) or --almost-all (-A) 
 is also given.
 
 This option can be useful in shell aliases. For example, if lx is an alias for 
-‘ls --hide='*~'’ and ly is an alias for ‘ls --ignore='*~'’, then the command 
-‘lx -A’ lists the file README~ even though ‘ly -A’ would not.
+ï¿½ls --hide='*~'ï¿½ and ly is an alias for ï¿½ls --ignore='*~'ï¿½, then the command 
+ï¿½lx -Aï¿½ lists the file README~ even though ï¿½ly -Aï¿½ would not.
 
-‘-I pattern’
-‘--ignore=pattern’
+ï¿½-I patternï¿½
+ï¿½--ignore=patternï¿½
 In directories, ignore files whose names match the shell pattern (not regular 
-expression) pattern. As in the shell, an initial ‘.’ in a file name does not 
+expression) pattern. As in the shell, an initial ï¿½.ï¿½ in a file name does not 
 match a wildcard at the start of pattern. Sometimes it is useful to give this 
 option several times. For example,
 
 $ ls --ignore='.??*' --ignore='.[^.]' --ignore='#*'
-The first option ignores names of length 3 or more that start with ‘.’, the 
-second ignores all two-character names that start with ‘.’ except ‘..’, and 
-the third ignores names that start with ‘#’.
+The first option ignores names of length 3 or more that start with ï¿½.ï¿½, the 
+second ignores all two-character names that start with ï¿½.ï¿½ except ï¿½..ï¿½, and 
+the third ignores names that start with ï¿½#ï¿½.
 
 `-l'
 `--format=long'
@@ -168,8 +170,8 @@ the third ignores names that start with ‘#’.
      character is a space, there is no alternate access method.  When it
      is a printing character (e.g., `+'), then there is such a method.
 
-‘-R’
-‘--recursive’
+ï¿½-Rï¿½
+ï¿½--recursiveï¿½
 List the contents of all directories recursively.
 
  --color       colors the output
@@ -204,30 +206,30 @@ public class ListDirectoryCommand {
 	//-----------------------------------------------------------------
 	// Command parameters
 	
-	@Parameter(name="a", 
+	@Parameter(name="a",
 			longName="all", 
 			description="In directories, do not ignore "
-					+ "file names that start with ‘.’")
+					+ "file names that start with ï¿½.ï¿½")
 	private Boolean all = Boolean.FALSE;
 	
 	@Parameter(name="A", 
 			longName="almost-all", 
 			description="In directories, do not ignore all file names that start "
-					+ "with ‘.’; ignore only . and .. The --all (-a) "
+					+ "with ï¿½.ï¿½; ignore only . and .. The --all (-a) "
 					+ "option overrides this option.")
 	private Boolean almostAll = Boolean.FALSE;
 	
 	@Parameter(name="B", 
 			longName="ignore-backups", 
-			description="In directories, ignore files that end with ‘~’. This option "
-				+ "is equivalent to ‘--ignore='*~' --ignore='.*~'’")
+			description="In directories, ignore files that end with ï¿½~ï¿½. This option "
+				+ "is equivalent to ï¿½--ignore='*~' --ignore='.*~'ï¿½")
 	private Boolean ignoreBackups = Boolean.TRUE;
 	
 	@Parameter(longName="group-directories-first", 
 			description="Group all the directories before the files and then sort "
 				+ "the directories and the files separately using the "
-				+ "selected sort key (see –sort option). That is, this "
-				+ "option specifies a primary sort key, and the –sort "
+				+ "selected sort key (see ï¿½sort option). That is, this "
+				+ "option specifies a primary sort key, and the ï¿½sort "
 				+ "option specifies a secondary key. However, any use of "
 				+ "sort=none (-U) disables this option altogether")
 	private Boolean groupDirectoriesFirst = Boolean.FALSE;
@@ -281,44 +283,37 @@ public class ListDirectoryCommand {
 	 */
 	public ListDirectoryCommand() {	}
 
+	@Run
 	// Entry point for ls
-	public int execute(
-			final Path currentPath, 
-			PrintWriter standardOutput, 
-			PrintWriter errorOutput) throws UnxException {		
+	public int execute(ExecutionContext ctx) throws Exception {
 		int ret = 0;
-		
-		try {
-			List<Path> paths = new LinkedList<>();
-			if (files == null) {
-				paths.add(currentPath);
-			}
-			else {
-				for (String file: files) {
-					paths.add(new File(currentPath.toFile(), file).toPath());
-				}
-			}
-			for (Path path: paths) {
-				try {
-					// Gather results, combining the appropriated filter options
-					List<FileResult> results = listFiles(path);
-					// Render the result presentation, combining the appropriated
-					//	output options
-					for (FileResult f: results) {
-						printFileResult(paths.size() > 1, standardOutput, path, currentPath, f);
-					}
-				}
-				catch(AccessDeniedException e) {
-					// Cannot enter here...
-					errorOutput.println(e.getMessage());
-				}
-			}
-			
-			return ret;
+
+		List<Path> paths = new LinkedList<>();
+		if (files == null) {
+			paths.add(ctx.currentPath());
 		}
-		catch(Exception e) {
-			throw new UnxException(e);
+		else {
+			for (String file: files) {
+				paths.add(new File(ctx.currentPath().toFile(), file).toPath());
+			}
 		}
+		for (Path path: paths) {
+			try {
+				// Gather results, combining the appropriated filter options
+				List<FileResult> results = listFiles(path);
+				// Render the result presentation, combining the appropriated
+				//	output options
+				for (FileResult f: results) {
+					printFileResult(paths.size() > 1, ctx.standardOutput(), path, ctx.currentPath(), f);
+				}
+			}
+			catch(AccessDeniedException e) {
+				// Cannot enter here...
+				ctx.errorOutput().println(e.getMessage());
+			}
+		}
+
+		return ret;
 	}
 	
 	// List the files under the current path
@@ -443,24 +438,24 @@ public class ListDirectoryCommand {
 			sb.append(" ");
 			// Owner name
 			if (posixAttrs != null) {
-				sb.append(Utils.format(posixAttrs.owner().getName(), OWNER_LENGTH));
+				sb.append(format(posixAttrs.owner().getName(), OWNER_LENGTH));
 			}
 			else {
-				sb.append(Utils.format(fileOwnerAttrs.getOwner().getName(), OWNER_LENGTH));
+				sb.append(format(fileOwnerAttrs.getOwner().getName(), OWNER_LENGTH));
 			}
 			// Space
 			sb.append(" ");
 			// Owner's group name
 			if (posixAttrs != null) {
-				sb.append(Utils.format(posixAttrs.group().getName(), OWNER_LENGTH));
+				sb.append(format(posixAttrs.group().getName(), OWNER_LENGTH));
 			}
 			else {
-				sb.append(Utils.format(fileOwnerAttrs.getOwner().getName(), OWNER_LENGTH));
+				sb.append(format(fileOwnerAttrs.getOwner().getName(), OWNER_LENGTH));
 			}
 			// Space
 			sb.append(" ");
 			// Size
-			sb.append(Utils.format(getSize(basicAttrs.size()), SIZE_LENGTH));
+			sb.append(format(getSize(basicAttrs.size()), SIZE_LENGTH));
 			// Space
 			sb.append(" ");
 			// Last modification date
@@ -531,15 +526,15 @@ public class ListDirectoryCommand {
 		// Month in english
 		sb.append(MODIFICATION_MONTH_FORMAT.format(modificationTime.getTime()));
 		sb.append(" ");
-		sb.append(Utils.format(Integer.toString(modificationTime.get(Calendar.DAY_OF_MONTH)), 2));
+		sb.append(format(Integer.toString(modificationTime.get(Calendar.DAY_OF_MONTH)), 2));
 		sb.append(" ");
 		// Year if not the same that right now
 		if (modificationTime.get(Calendar.YEAR) != rightNow.get(Calendar.YEAR)) {
-			sb.append(Utils.format(Integer.toString(modificationTime.get(Calendar.YEAR)), 5));
+			sb.append(format(Integer.toString(modificationTime.get(Calendar.YEAR)), 5));
 		}
 		else {
 			// Hour of modification
-			sb.append(Utils.format(MODIFICATION_TIME_FORMAT.format(modificationTime.getTime()), 5));
+			sb.append(format(MODIFICATION_TIME_FORMAT.format(modificationTime.getTime()), 5));
 		}
 				
 		return sb.toString();
