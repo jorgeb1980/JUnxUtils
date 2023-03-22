@@ -294,7 +294,9 @@ public class ListDirectoryCommand {
 		}
 		else {
 			for (String file: files) {
-				paths.add(new File(ctx.currentPath().toFile(), file).toPath());
+				Path path = Path.of(file);
+				if (path.isAbsolute()) paths.add(path);
+				else paths.add(new File(ctx.currentPath().toFile(), file).toPath());
 			}
 		}
 		for (Path path: paths) {
@@ -312,7 +314,6 @@ public class ListDirectoryCommand {
 				ctx.errorOutput().println(e.getMessage());
 			}
 		}
-
 		return ret;
 	}
 	
