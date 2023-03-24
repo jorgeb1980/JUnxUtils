@@ -1,5 +1,6 @@
 package unxutils.coreutils;
 
+import cli.CmdException;
 import cli.ExecutionContext;
 import cli.annotations.Command;
 import cli.annotations.Parameter;
@@ -12,6 +13,8 @@ import java.math.BigDecimal;
 import java.nio.file.FileStore;
 import java.nio.file.FileSystem;
 import java.nio.file.FileSystems;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import static unxutils.format.Format.format;
 
@@ -194,6 +197,8 @@ Ignored; for compatibility with System V versions of df.
 @Command(command="df", description="df reports the amount of disk space used and available on file systems")
 public class FreeDiskSpaceCommand {
 
+	private static final Logger logger = Logger.getLogger(FreeDiskSpaceCommand.class.getName());
+
 	//-----------------------------------------------------------------
 	// Command constants
 	
@@ -246,28 +251,33 @@ public class FreeDiskSpaceCommand {
 		stdOutput.println();
 	}
 	// Renders the information of a file system
-	private void renderFS(FileStore fs, PrintWriter stdOutput) throws IOException{
-		// Filesystem, total size, used, available, usage%
-		BigDecimal totalSize = new BigDecimal(fs.getTotalSpace());
-		BigDecimal usedSize = 
-			new BigDecimal(fs.getTotalSpace()).
-				subtract(new BigDecimal(fs.getUnallocatedSpace()));
-		BigDecimal availableSize = new BigDecimal(fs.getUnallocatedSpace());
-		BigDecimal usage = BigDecimal.ZERO;
-		if (!totalSize.equals(BigDecimal.ZERO)) {
-			usage = usedSize.divide(totalSize, 2, BigDecimal.ROUND_FLOOR).multiply(new BigDecimal(100));
+	private void renderFS(FileStore fs, PrintWriter stdOutput) throws CmdException {
+		try {
+			// Filesystem, total size, used, available, usage%
+			BigDecimal totalSize = new BigDecimal(fs.getTotalSpace());
+			BigDecimal usedSize =
+				new BigDecimal(fs.getTotalSpace()).
+					subtract(new BigDecimal(fs.getUnallocatedSpace()));
+			BigDecimal availableSize = new BigDecimal(fs.getUnallocatedSpace());
+			BigDecimal usage = BigDecimal.ZERO;
+			if (!totalSize.equals(BigDecimal.ZERO)) {
+				usage = usedSize.divide(totalSize, 2, BigDecimal.ROUND_FLOOR).multiply(new BigDecimal(100));
+			}
+
+			stdOutput.print(format(fs.toString(), WIDTH_FILESYSTEM));
+			if (printType) {
+				stdOutput.print(format(fs.type(), WIDTH_TYPE));
+			}
+			stdOutput.print(printNumber(totalSize));
+			stdOutput.print(printNumber(usedSize));
+			stdOutput.print(printNumber(availableSize));
+			stdOutput.print(format(usage.toString(), WIDTH_PERCENTAGE));
+
+			stdOutput.println();
+		} catch (IOException ioe) {
+			//throw new CmdException(ioe, "Could not read filesystem " + fs.name(), -1500);
+			logger.log(Level.WARNING, "Could not read filesystem " + fs.name() + " of type " + fs.type());
 		}
-		
-		stdOutput.print(format(fs.toString(), WIDTH_FILESYSTEM));
-		if (printType) {
-			stdOutput.print(format(fs.type(), WIDTH_TYPE));
-		}
-		stdOutput.print(printNumber(totalSize));
-		stdOutput.print(printNumber(usedSize));
-		stdOutput.print(printNumber(availableSize));
-		stdOutput.print(format(usage.toString(), WIDTH_PERCENTAGE));
-		
-		stdOutput.println();
 	}
 	
 	// Prints a number according to options
