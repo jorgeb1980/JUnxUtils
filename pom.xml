@@ -7,7 +7,7 @@
 
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    <cli.library.revision>1.5-SNAPSHOT</cli.library.revision>
+    <cli.library.revision>1.6</cli.library.revision>
   </properties>
   <build>
       <finalName>redist/libs/app-${project.version}</finalName>
@@ -61,6 +61,12 @@
           <groupId>cli-library</groupId>
           <artifactId>cli-command-library</artifactId>
           <version>${cli.library.revision}</version>
+      </dependency>
+      <!-- https://mvnrepository.com/artifact/org.projectlombok/lombok -->
+      <dependency>
+          <groupId>org.projectlombok</groupId>
+          <artifactId>lombok</artifactId>
+          <version>1.18.30</version>
       </dependency>
       <dependency>
           <scope>test</scope>

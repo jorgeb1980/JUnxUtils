@@ -1,5 +1,14 @@
 package unxutils.coreutils;
 
+import cli.ANSIEscapeCode;
+import cli.ExecutionContext;
+import cli.annotations.Command;
+import cli.annotations.OptionalArgs;
+import cli.annotations.Parameter;
+import cli.annotations.Run;
+import lombok.Setter;
+import unxutils.format.HumanReadableFormat;
+
 import java.io.File;
 import java.io.FileFilter;
 import java.io.IOException;
@@ -7,33 +16,16 @@ import java.io.PrintWriter;
 import java.nio.file.AccessDeniedException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.attribute.BasicFileAttributeView;
-import java.nio.file.attribute.BasicFileAttributes;
-import java.nio.file.attribute.FileOwnerAttributeView;
-import java.nio.file.attribute.FileTime;
-import java.nio.file.attribute.PosixFileAttributeView;
-import java.nio.file.attribute.PosixFileAttributes;
-import java.nio.file.attribute.PosixFilePermission;
+import java.nio.file.attribute.*;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
-import java.util.Calendar;
-import java.util.Date;
-import java.util.Iterator;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Locale;
-import java.util.Set;
+import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import cli.ANSIEscapeCode;
-import cli.ExecutionContext;
-import cli.annotations.Command;
-import cli.annotations.OptionalArgs;
-import cli.annotations.Parameter;
-import cli.annotations.Run;
-import unxutils.format.HumanReadableFormat;
-
+import static java.lang.Boolean.FALSE;
+import static java.nio.file.attribute.PosixFilePermission.*;
+import static java.util.Locale.ENGLISH;
 import static unxutils.format.Format.format;
 
 /**
@@ -180,108 +172,120 @@ List the contents of all directories recursively.
 */
 @Command(command="ls", description="List information about the files (the current directory by default).")
 public class ListDirectoryCommand {
-	
-	
+
+
 	//-----------------------------------------------------------------
 	// Command constants
-	
-	// File size length, for long output format	
+
+	// File size length, for long output format
 	private static final int SIZE_LENGTH = 8;
 	// Owner name length, for long output format
 	private static final int OWNER_LENGTH = 12;
 	// Maximum hard links number to be shown
 	private static final Long MAX_HARD_LINKS = Long.valueOf(999l);
 	// English months date format
-	private static final DateFormat MODIFICATION_MONTH_FORMAT = new SimpleDateFormat("MMM", Locale.ENGLISH);
+	private static final DateFormat MODIFICATION_MONTH_FORMAT = new SimpleDateFormat("MMM", ENGLISH);
 	// Hours and minutes format
-	private static final DateFormat MODIFICATION_TIME_FORMAT = new SimpleDateFormat("HH:mm", Locale.ENGLISH);
+	private static final DateFormat MODIFICATION_TIME_FORMAT = new SimpleDateFormat("HH:mm", ENGLISH);
 	// Windows executable files pattern
-	private static final Pattern EXECUTABLE_FILES_PATTERN = 
+	private static final Pattern EXECUTABLE_FILES_PATTERN =
 		Pattern.compile("([\\.\\w]+)\\.exe|([\\.\\w]+)\\.bat|([\\.\\w]+)\\.cmd|([\\.\\w]+)\\.scr");
 	// Executable file (Windows)
 	private static final String WINDOWS_EXECUTABLE_PERMISSIONS = "rwxrwxrwx";
 	// Non executable file (Windows)
 	private static final String WINDOWS_NONEXECUTABLE_PERMISSIONS = "rw-rw-rw-";
-	
+
 	//-----------------------------------------------------------------
 	// Command parameters
-	
+
+	@Setter
 	@Parameter(name="a",
-			longName="all", 
-			description="In directories, do not ignore "
-					+ "file names that start with �.�")
-	private Boolean all = Boolean.FALSE;
-	
-	@Parameter(name="A", 
-			longName="almost-all", 
-			description="In directories, do not ignore all file names that start "
-					+ "with �.�; ignore only . and .. The --all (-a) "
-					+ "option overrides this option.")
-	private Boolean almostAll = Boolean.FALSE;
-	
-	@Parameter(name="B", 
-			longName="ignore-backups", 
-			description="In directories, ignore files that end with �~�. This option "
-				+ "is equivalent to �--ignore='*~' --ignore='.*~'�")
+		longName="all",
+		description="In directories, do not ignore "
+			+ "file names that start with �.�")
+	private Boolean all = FALSE;
+
+	@Setter
+	@Parameter(name="A",
+		longName="almost-all",
+		description="In directories, do not ignore all file names that start "
+			+ "with �.�; ignore only . and .. The --all (-a) "
+			+ "option overrides this option.")
+	private Boolean almostAll = FALSE;
+
+	@Setter
+	@Parameter(name="B",
+		longName="ignore-backups",
+		description="In directories, ignore files that end with �~�. This option "
+			+ "is equivalent to �--ignore='*~' --ignore='.*~'�")
 	private Boolean ignoreBackups = Boolean.TRUE;
-	
-	@Parameter(longName="group-directories-first", 
-			description="Group all the directories before the files and then sort "
-				+ "the directories and the files separately using the "
-				+ "selected sort key (see �sort option). That is, this "
-				+ "option specifies a primary sort key, and the �sort "
-				+ "option specifies a secondary key. However, any use of "
-				+ "sort=none (-U) disables this option altogether")
-	private Boolean groupDirectoriesFirst = Boolean.FALSE;
-	
-	@Parameter(longName="hide", 
-			hasArg=true,
-			description="In directories, ignore files whose names match the shell pattern pattern,"
-				+ " unless the --all (-a) or --almost-all (-A) is also given. This option "
-				+ "acts like --ignore=pattern except that it has no effect if --all (-a) "
-				+ "or --almost-all (-A) is also given")
+
+	@Setter
+	@Parameter(longName="group-directories-first",
+		description="Group all the directories before the files and then sort "
+			+ "the directories and the files separately using the "
+			+ "selected sort key (see �sort option). That is, this "
+			+ "option specifies a primary sort key, and the �sort "
+			+ "option specifies a secondary key. However, any use of "
+			+ "sort=none (-U) disables this option altogether")
+	private Boolean groupDirectoriesFirst = FALSE;
+
+	@Setter
+	@Parameter(longName="hide",
+		hasArg=true,
+		description="In directories, ignore files whose names match the shell pattern pattern,"
+			+ " unless the --all (-a) or --almost-all (-A) is also given. This option "
+			+ "acts like --ignore=pattern except that it has no effect if --all (-a) "
+			+ "or --almost-all (-A) is also given")
 	private String hide = null;
-	
-	@Parameter(longName="color", 
-			description="colors the output.")
-	private Boolean color = Boolean.FALSE;
-	
+
+	@Setter
+	@Parameter(longName="color",
+		description="colors the output.")
+	private Boolean color = FALSE;
+
+	@Setter
 	@Parameter(name="I",
-			longName="ignore", 
-			hasArg=true,
-			description="do not list implied entries matching shell PATTERN")
+		longName="ignore",
+		hasArg=true,
+		description="do not list implied entries matching shell PATTERN")
 	private String ignore = null;
-	
+
+	@Setter
 	@Parameter(name="h",
-			longName="human-readable", 
-			description="print human readable sizes (e.g., 1K 234M 2G)")
-	private Boolean humanReadable = Boolean.FALSE;
-	
+		longName="human-readable",
+		description="print human readable sizes (e.g., 1K 234M 2G)")
+	private Boolean humanReadable = FALSE;
+
+	@Setter
 	@Parameter(name="R",
-			longName="recursive", 
-			description="list subdirectories recursively")
-	private Boolean recursive = Boolean.FALSE;
-	
+		longName="recursive",
+		description="list subdirectories recursively")
+	private Boolean recursive = FALSE;
+
+	@Setter
 	@Parameter(name="l",
-			description="use a long listing format")
-	private Boolean longOutputFormat = Boolean.FALSE;
-	
+		description="use a long listing format")
+	private Boolean longOutputFormat = FALSE;
+
+	@Setter
 	@OptionalArgs(name="FILE")
 	private List<String> files;
 
 	//-----------------------------------------------------------------
 	// Command variables
-	
+
 	// Reported directory headers
 	private List<Path> reportedDirectoryPaths = new LinkedList<>();
-	
+
 	//-----------------------------------------------------------------
-	// Command methods	
-	
+	// Command methods
+
 	/**
 	 * Builds an ls command.
 	 */
-	public ListDirectoryCommand() {	}
+	public ListDirectoryCommand() {
+	}
 
 	@Run
 	// Entry point for ls
@@ -291,8 +295,7 @@ public class ListDirectoryCommand {
 		List<Path> paths = new LinkedList<>();
 		if (files == null) {
 			paths.add(ctx.currentPath());
-		}
-		else {
+		} else {
 			for (String file: files) {
 				Path path = Path.of(file);
 				if (path.isAbsolute()) paths.add(path);
@@ -308,18 +311,17 @@ public class ListDirectoryCommand {
 				for (FileResult f: results) {
 					printFileResult(paths.size() > 1, ctx.standardOutput(), path, ctx.currentPath(), f);
 				}
-			}
-			catch(AccessDeniedException e) {
+			} catch(AccessDeniedException e) {
 				// Cannot enter here...
 				ctx.errorOutput().println(e.getMessage());
 			}
 		}
 		return ret;
 	}
-	
+
 	// List the files under the current path
 	private List<FileResult> listFiles(Path path) throws IOException {
-		List<FileResult> ret = new LinkedList<>();		
+		List<FileResult> ret = new LinkedList<>();
 		if (all) {
 			ret.add(new FileResult(path.toFile()));
 		}
@@ -329,10 +331,10 @@ public class ListDirectoryCommand {
 		for (File f: path.toFile().listFiles(new ListDirectoryFilter(path.toFile()))) {
 			ret.add(new FileResult(f, recursive));
 		}
-		
+
 		return ret;
 	}
-	
+
 	// Calculates newPath relative to originalPath, if possible
 	// getRelativePath(/etc, /etc/openssh) -> openssh
 	// getRelativePath(/etc, /opt/ibm) -> /opt/ibm
@@ -347,21 +349,20 @@ public class ListDirectoryCommand {
 		}
 		return ret;
 	}
-	
+
 	// Presentation of a file result relative to some path (maybe nested)
-	private void printFileResult(boolean manyFiles, PrintWriter out, Path path, Path currentPath, FileResult f) 
-			throws IOException {
+	private void printFileResult(boolean manyFiles, PrintWriter out, Path path, Path currentPath, FileResult f)
+		throws IOException {
 		// We write only once every directory header
-		if (manyFiles 
-				&& currentPath.toFile().isDirectory() 
-				&& !reportedDirectoryPaths.contains(path)) {
+		if (manyFiles
+			&& currentPath.toFile().isDirectory()
+			&& !reportedDirectoryPaths.contains(path)) {
 			out.println(getRelativePath(currentPath, path) + ":");
 			reportedDirectoryPaths.add(path);
 		}
 		if (f.getChildren() == null) {
 			printFile(out, f, path);
-		}
-		else {			
+		} else {
 			for (FileResult child: f.getChildren()) {
 				printFileResult(true, out, path, currentPath, child);
 			}
@@ -369,14 +370,14 @@ public class ListDirectoryCommand {
 	}
 
 	// Prints the information of a file
-	private void printFile(PrintWriter out, FileResult f, Path currentPath) 
-			throws IOException {
+	private void printFile(PrintWriter out, FileResult f, Path currentPath)
+		throws IOException {
 		PosixFileAttributes posixAttrs = f.getPosixAttrs();
 		String fileName = getFileName(f, currentPath, posixAttrs);
 		// Is it long?
 		if (longOutputFormat) {
 			// Long output format:
-			/*
+            /*
 			 	1		file type (d/l/-)
 			 	9		permission mask
 				-1-
@@ -398,35 +399,33 @@ public class ListDirectoryCommand {
 			 */
 			BasicFileAttributes basicAttrs = f.getBasicAttrs();
 			FileOwnerAttributeView fileOwnerAttrs = f.getFileOwnerAttributeView();
-			
+
 			StringBuilder sb = new StringBuilder();
 			// File type
 			sb.append(f.getFile().isDirectory()?"d":(basicAttrs.isSymbolicLink()?"l":"-"));
 			// Permissions
 			if (posixAttrs != null) {
-				Set<PosixFilePermission> permissions = posixAttrs.permissions();
-				sb.append(permissions.contains(PosixFilePermission.OWNER_READ)?"r":"-");
-				sb.append(permissions.contains(PosixFilePermission.OWNER_WRITE)?"w":"-");
-				sb.append(permissions.contains(PosixFilePermission.OWNER_EXECUTE)?"x":"-");
-				sb.append(permissions.contains(PosixFilePermission.GROUP_READ)?"r":"-");
-				sb.append(permissions.contains(PosixFilePermission.GROUP_WRITE)?"w":"-");
-				sb.append(permissions.contains(PosixFilePermission.GROUP_EXECUTE)?"x":"-");
-				sb.append(permissions.contains(PosixFilePermission.OTHERS_READ)?"r":"-");
-				sb.append(permissions.contains(PosixFilePermission.OTHERS_WRITE)?"w":"-");
-				sb.append(permissions.contains(PosixFilePermission.OTHERS_EXECUTE)?"x":"-");
-			}
-			else {
+				Set<PosixFilePermission> p = posixAttrs.permissions();
+				sb.append(p.contains(OWNER_READ)?"r":"-");
+				sb.append(p.contains(OWNER_WRITE)?"w":"-");
+				sb.append(p.contains(OWNER_EXECUTE)?"x":"-");
+				sb.append(p.contains(GROUP_READ)?"r":"-");
+				sb.append(p.contains(GROUP_WRITE)?"w":"-");
+				sb.append(p.contains(GROUP_EXECUTE)?"x":"-");
+				sb.append(p.contains(OTHERS_READ)?"r":"-");
+				sb.append(p.contains(OTHERS_WRITE)?"w":"-");
+				sb.append(p.contains(OTHERS_EXECUTE)?"x":"-");
+			} else {
 				// Assume Windows:
 				// rwxrwxrwx for executables
 				// rw-rw-rw- for the rest
 				Matcher matcher = EXECUTABLE_FILES_PATTERN.matcher(f.getFile().getName());
 				if (matcher.matches()) {
 					sb.append(WINDOWS_EXECUTABLE_PERMISSIONS);
-				}
-				else {
+				} else {
 					sb.append(WINDOWS_NONEXECUTABLE_PERMISSIONS);
 				}
-				
+
 			}
 			// Space
 			sb.append(" ");
@@ -440,8 +439,7 @@ public class ListDirectoryCommand {
 			// Owner name
 			if (posixAttrs != null) {
 				sb.append(format(posixAttrs.owner().getName(), OWNER_LENGTH));
-			}
-			else {
+			} else {
 				sb.append(format(fileOwnerAttrs.getOwner().getName(), OWNER_LENGTH));
 			}
 			// Space
@@ -449,8 +447,7 @@ public class ListDirectoryCommand {
 			// Owner's group name
 			if (posixAttrs != null) {
 				sb.append(format(posixAttrs.group().getName(), OWNER_LENGTH));
-			}
-			else {
+			} else {
 				sb.append(format(fileOwnerAttrs.getOwner().getName(), OWNER_LENGTH));
 			}
 			// Space
@@ -466,53 +463,49 @@ public class ListDirectoryCommand {
 			// File name
 			sb.append(fileName);
 			out.println(sb.toString());
-		}
-		else {
+		} else {
 			out.println(fileName);
 		}
 	}
 
 	// Renders the name of the file
-	private String getFileName(FileResult f, Path currentPath, PosixFileAttributes posixAttrs) 
-			throws IOException {
+	private String getFileName(FileResult f, Path currentPath, PosixFileAttributes posixAttrs)
+		throws IOException {
 		String fileName = f.getFile().getName();
 		if (currentPath.toFile().getCanonicalPath().equals(f.getFile().getCanonicalPath())) {
 			fileName = ".";
-		}
-		else if (currentPath.toFile().getParentFile() != null &&
+		} else if (currentPath.toFile().getParentFile() != null &&
 			currentPath.toFile().getParentFile().getCanonicalPath().equals(
-					f.getFile().getCanonicalPath())) {
+				f.getFile().getCanonicalPath())) {
 			fileName = "..";
 		}
 		// Should we color it?
 		if (color) {
 			if (f.getFile().isDirectory()) {
-				fileName = ANSIEscapeCode.paint(fileName, ANSIEscapeCode.BLUE);
-			}
-			else {
+				fileName = ANSIEscapeCode.paint(fileName, ANSIEscapeCode.BRIGHT_BLUE) + "/";
+			} else {
 				boolean executable = false;
 				if (posixAttrs != null) {
 					Set<PosixFilePermission> permissions = posixAttrs.permissions();
-					executable = 
-						permissions.contains(PosixFilePermission.OWNER_EXECUTE) |
-						permissions.contains(PosixFilePermission.GROUP_EXECUTE) |
-						permissions.contains(PosixFilePermission.OTHERS_EXECUTE);
-				}
-				else {
+					executable =
+						permissions.contains(OWNER_EXECUTE) |
+							permissions.contains(GROUP_EXECUTE) |
+							permissions.contains(OTHERS_EXECUTE);
+				} else {
 					Matcher matcher = EXECUTABLE_FILES_PATTERN.matcher(f.getFile().getName());
 					executable = matcher.matches();
 				}
 				if (executable) {
-					fileName = ANSIEscapeCode.paint(fileName, ANSIEscapeCode.GREEN);
+					fileName = ANSIEscapeCode.paint(fileName, ANSIEscapeCode.BRIGHT_GREEN);
 				}
 			}
 		}
 		return fileName;
 	}
-	
+
 	// Properly formats the modification date for presentation
 	private String formatModificationDate(FileTime lastModifiedTime) {
-		/*
+        /*
 			3		month of last modification date
 			-1-
 			2		day of last modification date
@@ -532,12 +525,11 @@ public class ListDirectoryCommand {
 		// Year if not the same that right now
 		if (modificationTime.get(Calendar.YEAR) != rightNow.get(Calendar.YEAR)) {
 			sb.append(format(Integer.toString(modificationTime.get(Calendar.YEAR)), 5));
-		}
-		else {
+		} else {
 			// Hour of modification
 			sb.append(format(MODIFICATION_TIME_FORMAT.format(modificationTime.getTime()), 5));
 		}
-				
+
 		return sb.toString();
 	}
 
@@ -549,7 +541,7 @@ public class ListDirectoryCommand {
 		}
 		return ret;
 	}
-	
+
 	// Inner class to store the results
 	private class FileResult {
 		// File or directory
@@ -564,12 +556,12 @@ public class ListDirectoryCommand {
 		private Long hardLinks = null;
 		// File owner attributes
 		private FileOwnerAttributeView fileOwnerAttrs = null;
-		
+
 		// Builds a file result on a File
 		public FileResult(File f) throws IOException {
 			this(f, false);
 		}
-		
+
 		// Builds a file result on a File
 		public FileResult(File f, boolean recursive) throws IOException {
 			this.f = f;
@@ -581,14 +573,13 @@ public class ListDirectoryCommand {
 			}
 		}
 
-		// Gathers the posix attributes for the long output format 
+		// Gathers the posix attributes for the long output format
 		public PosixFileAttributes getPosixAttrs() {
 			if (posixAttrs == null) {
 				try {
 					posixAttrs = Files.getFileAttributeView(f.toPath(), PosixFileAttributeView.class)
 						.readAttributes();
-				}
-				catch(Exception ioe) {
+				} catch(Exception ioe) {
 					// Just assume that the current file store does not support
 					//	POSIX attributes
 					posixAttrs = null;
@@ -596,7 +587,7 @@ public class ListDirectoryCommand {
 			}
 			return posixAttrs;
 		}
-		
+
 		// Gathers the file owner permissions
 		public FileOwnerAttributeView getFileOwnerAttributeView() {
 			if (fileOwnerAttrs == null) {
@@ -604,30 +595,28 @@ public class ListDirectoryCommand {
 			}
 			return fileOwnerAttrs;
 		}
-		
-		// Gathers the basic attributes for the long output format 
+
+		// Gathers the basic attributes for the long output format
 		public BasicFileAttributes getBasicAttrs() {
 			if (basicAttrs == null) {
 				try {
 					basicAttrs = Files.getFileAttributeView(f.toPath(), BasicFileAttributeView.class)
 						.readAttributes();
-				}
-				catch(IOException ioe) {
+				} catch(IOException ioe) {
 					ioe.printStackTrace();
 				}
 			}
 			return basicAttrs;
 		}
-		
+
 		// Gathers the number of hard links for the long output format
 		public Long getHardLinks() {
 			if (hardLinks == null) {
 				try {
 					hardLinks = Long.valueOf(
-						java.nio.file.Files.getAttribute(f.toPath(), 
-								"unix:nlink").toString());
-				}
-				catch(Exception e) {
+						java.nio.file.Files.getAttribute(f.toPath(),
+							"unix:nlink").toString());
+				} catch(Exception e) {
 					hardLinks = 1l;
 				}
 			}
@@ -646,23 +635,26 @@ public class ListDirectoryCommand {
 		 */
 		public List<FileResult> getChildren() {
 			return children;
-		}					
-	}	
-	
+		}
+	}
+
 	// Kind of filter closure implementation
-	private interface Filter {		
+	private interface Filter {
 		boolean accept(File f) throws IOException ;
 	}
-	
+
 	// Simple filter chain implementation
 	private static class FilterChain {
 		private List<Filter> filters;
+
 		public FilterChain() {
 			filters = new LinkedList<>();
 		}
+
 		public void append(Filter f) {
 			filters.add(f);
 		}
+
 		public boolean accept(File f) throws IOException  {
 			boolean ret = true;
 			Iterator<Filter> it = filters.iterator();
@@ -672,20 +664,20 @@ public class ListDirectoryCommand {
 			return ret;
 		}
 	}
-	
+
 	// Implements a directory filter based on the options collected on
 	//	ListDirectoryCommand.this
 	private class ListDirectoryFilter implements FileFilter {
-	
+
 		//---------------------------------------------------------
 		// Filter properties
-		
+
 		// Filter chain
 		private FilterChain chain;
-		
+
 		//---------------------------------------------------------
-		// Filter methods		
-		
+		// Filter methods
+
 		/**
 		 * Builds a filter based on the command line options.
 		 * @param options Options passed to the filter.
@@ -710,12 +702,12 @@ public class ListDirectoryCommand {
 					}
 				});
 			}
-			
+
 			if (!all && !almostAll && hide != null && hide.trim().length() > 0) {
 				final Pattern pattern = Pattern.compile(hide);
 				// Improvement: try to solve this without repeating any code
 				// Requirements for final pattern variable in order to use
-				//	it into an anonymous implementation of Filter makes it 
+				//	it into an anonymous implementation of Filter makes it
 				//	hard
 				chain.append(new Filter() {
 					@Override
@@ -726,7 +718,7 @@ public class ListDirectoryCommand {
 				});
 			}
 			if (ignore != null && ignore.trim().length() > 0) {
-				final Pattern pattern = Pattern.compile(ignore);				
+				final Pattern pattern = Pattern.compile(ignore);
 				chain.append(new Filter() {
 					@Override
 					public boolean accept(File f) throws IOException {
@@ -736,97 +728,17 @@ public class ListDirectoryCommand {
 				});
 			}
 		}
-		
+
 		@Override
 		public boolean accept(File file) {
 			boolean ret = true;
 			try {
 				ret = chain.accept(file);
-			}
-			catch(IOException ioe) {
+			} catch(IOException ioe) {
 				ret = false;
 			}
 			return ret;
 		}
 	}
 
-	// Setters methods for the properties
-	
-	/**
-	 * @param all the all to set
-	 */
-	public void setAll(Boolean all) {
-		this.all = all;
-	}
-
-	/**
-	 * @param almostAll the almostAll to set
-	 */
-	public void setAlmostAll(Boolean almostAll) {
-		this.almostAll = almostAll;
-	}
-
-	/**
-	 * @param ignoreBackups the ignoreBackups to set
-	 */
-	public void setIgnoreBackups(Boolean ignoreBackups) {
-		this.ignoreBackups = ignoreBackups;
-	}
-
-	/**
-	 * @param groupDirectoriesFirst the groupDirectoriesFirst to set
-	 */
-	public void setGroupDirectoriesFirst(Boolean groupDirectoriesFirst) {
-		this.groupDirectoriesFirst = groupDirectoriesFirst;
-	}
-
-	/**
-	 * @param hide the hide to set
-	 */
-	public void setHide(String hide) {
-		this.hide = hide;
-	}
-
-	/**
-	 * @param color the color to set
-	 */
-	public void setColor(Boolean color) {
-		this.color = color;
-	}
-
-	/**
-	 * @param ignore the ignore to set
-	 */
-	public void setIgnore(String ignore) {
-		this.ignore = ignore;
-	}
-
-	/**
-	 * @param humanReadable the humanReadable to set
-	 */
-	public void setHumanReadable(Boolean humanReadable) {
-		this.humanReadable = humanReadable;
-	}
-
-	/**
-	 * @param recursive the recursive to set
-	 */
-	public void setRecursive(Boolean recursive) {
-		this.recursive = recursive;
-	}
-
-	/**
-	 * @param longOutputFormat the longOutputFormat to set
-	 */
-	public void setLongOutputFormat(Boolean longOutputFormat) {
-		this.longOutputFormat = longOutputFormat;
-	}
-
-	/**
-	 * @param files the files to set
-	 */
-	public void setFiles(List<String> files) {
-		this.files = files;
-	}
-	
 }
