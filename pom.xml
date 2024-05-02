@@ -3,11 +3,11 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>junxutils</groupId>
   <artifactId>app</artifactId>
-  <version>1.1-SNAPSHOT</version>
+  <version>1.1.0</version>
 
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    <cli.library.revision>1.8.0-SNAPSHOT</cli.library.revision>
+    <cli.library.revision>1.8.0</cli.library.revision>
     <java.version>21</java.version>
   </properties>
   <build>
