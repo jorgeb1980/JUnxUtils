@@ -6,6 +6,7 @@ import cli.annotations.Command;
 import cli.annotations.OptionalArgs;
 import cli.annotations.Parameter;
 import cli.annotations.Run;
+import lombok.Getter;
 import lombok.Setter;
 import unxutils.format.HumanReadableFormat;
 
@@ -14,17 +15,36 @@ import java.io.FileFilter;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.nio.file.AccessDeniedException;
+import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.attribute.*;
+import java.nio.file.attribute.BasicFileAttributeView;
+import java.nio.file.attribute.BasicFileAttributes;
+import java.nio.file.attribute.FileOwnerAttributeView;
+import java.nio.file.attribute.FileTime;
+import java.nio.file.attribute.PosixFileAttributeView;
+import java.nio.file.attribute.PosixFileAttributes;
+import java.nio.file.attribute.PosixFilePermission;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
-import java.util.*;
+import java.util.Calendar;
+import java.util.Date;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import static java.lang.Boolean.FALSE;
-import static java.nio.file.attribute.PosixFilePermission.*;
+import static java.nio.file.attribute.PosixFilePermission.GROUP_EXECUTE;
+import static java.nio.file.attribute.PosixFilePermission.GROUP_READ;
+import static java.nio.file.attribute.PosixFilePermission.GROUP_WRITE;
+import static java.nio.file.attribute.PosixFilePermission.OTHERS_EXECUTE;
+import static java.nio.file.attribute.PosixFilePermission.OTHERS_READ;
+import static java.nio.file.attribute.PosixFilePermission.OTHERS_WRITE;
+import static java.nio.file.attribute.PosixFilePermission.OWNER_EXECUTE;
+import static java.nio.file.attribute.PosixFilePermission.OWNER_READ;
+import static java.nio.file.attribute.PosixFilePermission.OWNER_WRITE;
 import static java.util.Locale.ENGLISH;
 import static unxutils.format.Format.format;
 
@@ -182,7 +202,7 @@ public class ListDirectoryCommand {
 	// Owner name length, for long output format
 	private static final int OWNER_LENGTH = 12;
 	// Maximum hard links number to be shown
-	private static final Long MAX_HARD_LINKS = Long.valueOf(999l);
+	private static final Long MAX_HARD_LINKS = 999L;
 	// English months date format
 	private static final DateFormat MODIFICATION_MONTH_FORMAT = new SimpleDateFormat("MMM", ENGLISH);
 	// Hours and minutes format
@@ -224,7 +244,7 @@ public class ListDirectoryCommand {
 	@Parameter(longName="group-directories-first",
 		description="Group all the directories before the files and then sort "
 			+ "the directories and the files separately using the "
-			+ "selected sort key (see �sort option). That is, this "
+			+ "selected sort key (see sort option). That is, this "
 			+ "option specifies a primary sort key, and the �sort "
 			+ "option specifies a secondary key. However, any use of "
 			+ "sort=none (-U) disables this option altogether")
@@ -232,7 +252,6 @@ public class ListDirectoryCommand {
 
 	@Setter
 	@Parameter(longName="hide",
-		hasArg=true,
 		description="In directories, ignore files whose names match the shell pattern pattern,"
 			+ " unless the --all (-a) or --almost-all (-A) is also given. This option "
 			+ "acts like --ignore=pattern except that it has no effect if --all (-a) "
@@ -247,7 +266,6 @@ public class ListDirectoryCommand {
 	@Setter
 	@Parameter(name="I",
 		longName="ignore",
-		hasArg=true,
 		description="do not list implied entries matching shell PATTERN")
 	private String ignore = null;
 
@@ -276,7 +294,7 @@ public class ListDirectoryCommand {
 	// Command variables
 
 	// Reported directory headers
-	private List<Path> reportedDirectoryPaths = new LinkedList<>();
+	private final List<Path> reportedDirectoryPaths = new LinkedList<>();
 
 	//-----------------------------------------------------------------
 	// Command methods
@@ -292,23 +310,23 @@ public class ListDirectoryCommand {
 	public int execute(ExecutionContext ctx) throws Exception {
 		int ret = 0;
 
-		List<Path> paths = new LinkedList<>();
+		var paths = new LinkedList<Path>();
 		if (files == null) {
 			paths.add(ctx.currentPath());
 		} else {
 			for (String file: files) {
-				Path path = Path.of(file);
+				var path = Path.of(file);
 				if (path.isAbsolute()) paths.add(path);
 				else paths.add(new File(ctx.currentPath().toFile(), file).toPath());
 			}
 		}
-		for (Path path: paths) {
+		for (var path: paths) {
 			try {
 				// Gather results, combining the appropriated filter options
-				List<FileResult> results = listFiles(path);
+				var results = listFiles(path);
 				// Render the result presentation, combining the appropriated
 				//	output options
-				for (FileResult f: results) {
+				for (var f: results) {
 					printFileResult(paths.size() > 1, ctx.standardOutput(), path, ctx.currentPath(), f);
 				}
 			} catch(AccessDeniedException e) {
@@ -321,14 +339,14 @@ public class ListDirectoryCommand {
 
 	// List the files under the current path
 	private List<FileResult> listFiles(Path path) throws IOException {
-		List<FileResult> ret = new LinkedList<>();
+		var ret = new LinkedList<FileResult>();
 		if (all) {
 			ret.add(new FileResult(path.toFile()));
 		}
 		if (all && path.getParent() != null) {
 			ret.add(new FileResult(path.getParent().toFile()));
 		}
-		for (File f: path.toFile().listFiles(new ListDirectoryFilter(path.toFile()))) {
+		for (File f: path.toFile().listFiles(new ListDirectoryFilter())) {
 			ret.add(new FileResult(f, recursive));
 		}
 
@@ -339,11 +357,11 @@ public class ListDirectoryCommand {
 	// getRelativePath(/etc, /etc/openssh) -> openssh
 	// getRelativePath(/etc, /opt/ibm) -> /opt/ibm
 	private String getRelativePath(Path originalPath, Path newPath) {
-		String ret = newPath.toString();
+		var ret = newPath.toString();
 		if (newPath.toString().contains(originalPath.toString())) {
 			ret = newPath.toString().replace(originalPath.toString(), "");
 			// Remove non character at the begin
-			if (ret.startsWith(System.getProperty("file.separator"))) {
+			if (ret.startsWith(FileSystems.getDefault().getSeparator())) {
 				ret = ret.substring(1);
 			}
 		}
@@ -370,10 +388,9 @@ public class ListDirectoryCommand {
 	}
 
 	// Prints the information of a file
-	private void printFile(PrintWriter out, FileResult f, Path currentPath)
-		throws IOException {
-		PosixFileAttributes posixAttrs = f.getPosixAttrs();
-		String fileName = getFileName(f, currentPath, posixAttrs);
+	private void printFile(PrintWriter out, FileResult f, Path currentPath) throws IOException {
+		var posixAttrs = f.getPosixAttrs();
+		var fileName = getFileName(f, currentPath, posixAttrs);
 		// Is it long?
 		if (longOutputFormat) {
 			// Long output format:
@@ -397,10 +414,10 @@ public class ListDirectoryCommand {
 				-1-
 				X		name of the file
 			 */
-			BasicFileAttributes basicAttrs = f.getBasicAttrs();
-			FileOwnerAttributeView fileOwnerAttrs = f.getFileOwnerAttributeView();
+			var basicAttrs = f.getBasicAttrs();
+			var fileOwnerAttrs = f.getFileOwnerAttributeView();
 
-			StringBuilder sb = new StringBuilder();
+			var sb = new StringBuilder();
 			// File type
 			sb.append(f.getFile().isDirectory()?"d":(basicAttrs.isSymbolicLink()?"l":"-"));
 			// Permissions
@@ -419,7 +436,7 @@ public class ListDirectoryCommand {
 				// Assume Windows:
 				// rwxrwxrwx for executables
 				// rw-rw-rw- for the rest
-				Matcher matcher = EXECUTABLE_FILES_PATTERN.matcher(f.getFile().getName());
+				var matcher = EXECUTABLE_FILES_PATTERN.matcher(f.getFile().getName());
 				if (matcher.matches()) {
 					sb.append(WINDOWS_EXECUTABLE_PERMISSIONS);
 				} else {
@@ -430,7 +447,7 @@ public class ListDirectoryCommand {
 			// Space
 			sb.append(" ");
 			// Number of hard links
-			Long hardLinks = f.getHardLinks();
+			var hardLinks = f.getHardLinks();
 			if (hardLinks.compareTo(MAX_HARD_LINKS) > 0) {
 				hardLinks = MAX_HARD_LINKS;
 			}
@@ -471,7 +488,7 @@ public class ListDirectoryCommand {
 	// Renders the name of the file
 	private String getFileName(FileResult f, Path currentPath, PosixFileAttributes posixAttrs)
 		throws IOException {
-		String fileName = f.getFile().getName();
+		var fileName = f.getFile().getName();
 		if (currentPath.toFile().getCanonicalPath().equals(f.getFile().getCanonicalPath())) {
 			fileName = ".";
 		} else if (currentPath.toFile().getParentFile() != null &&
@@ -486,13 +503,13 @@ public class ListDirectoryCommand {
 			} else {
 				boolean executable = false;
 				if (posixAttrs != null) {
-					Set<PosixFilePermission> permissions = posixAttrs.permissions();
+					var permissions = posixAttrs.permissions();
 					executable =
 						permissions.contains(OWNER_EXECUTE) |
 							permissions.contains(GROUP_EXECUTE) |
 							permissions.contains(OTHERS_EXECUTE);
 				} else {
-					Matcher matcher = EXECUTABLE_FILES_PATTERN.matcher(f.getFile().getName());
+					var matcher = EXECUTABLE_FILES_PATTERN.matcher(f.getFile().getName());
 					executable = matcher.matches();
 				}
 				if (executable) {
@@ -512,10 +529,10 @@ public class ListDirectoryCommand {
 			-1-
 			5		year of last modification date if not the same; hour if the same 
 		 */
-		StringBuilder sb = new StringBuilder();
-		Calendar modificationTime = Calendar.getInstance();
+		var sb = new StringBuilder();
+		var modificationTime = Calendar.getInstance();
 		modificationTime.setTimeInMillis(lastModifiedTime.toInstant().toEpochMilli());
-		Calendar rightNow = Calendar.getInstance();
+		var rightNow = Calendar.getInstance();
 		rightNow.setTime(new Date());
 		// Month in english
 		sb.append(MODIFICATION_MONTH_FORMAT.format(modificationTime.getTime()));
@@ -535,7 +552,7 @@ public class ListDirectoryCommand {
 
 	// Gets the file size
 	private String getSize(long size) {
-		String ret = Long.toString(size);
+		var ret = Long.toString(size);
 		if (humanReadable) {
 			ret = HumanReadableFormat.format(size);
 		}
@@ -546,8 +563,8 @@ public class ListDirectoryCommand {
 	private class FileResult {
 		// File or directory
 		private File f = null;
-		// Children if f is a directory
-		private List<FileResult> children = null;
+		@Getter
+        private List<FileResult> children = null;
 		// POSIX attributes
 		private PosixFileAttributes posixAttrs = null;
 		// Basic attributes
@@ -567,7 +584,7 @@ public class ListDirectoryCommand {
 			this.f = f;
 			if (recursive && this.f.isDirectory()) {
 				this.children = new LinkedList<>();
-				for (File child: this.f.listFiles(new ListDirectoryFilter(f))) {
+				for (File child: this.f.listFiles(new ListDirectoryFilter())) {
 					this.children.add(new FileResult(child, recursive));
 				}
 			}
@@ -630,13 +647,7 @@ public class ListDirectoryCommand {
 			return f;
 		}
 
-		/**
-		 * @return the children
-		 */
-		public List<FileResult> getChildren() {
-			return children;
-		}
-	}
+    }
 
 	// Kind of filter closure implementation
 	private interface Filter {
@@ -645,7 +656,7 @@ public class ListDirectoryCommand {
 
 	// Simple filter chain implementation
 	private static class FilterChain {
-		private List<Filter> filters;
+		private final List<Filter> filters;
 
 		public FilterChain() {
 			filters = new LinkedList<>();
@@ -657,7 +668,7 @@ public class ListDirectoryCommand {
 
 		public boolean accept(File f) throws IOException  {
 			boolean ret = true;
-			Iterator<Filter> it = filters.iterator();
+			var it = filters.iterator();
 			while (ret && it.hasNext()) {
 				ret &= it.next().accept(f);
 			}
@@ -673,16 +684,15 @@ public class ListDirectoryCommand {
 		// Filter properties
 
 		// Filter chain
-		private FilterChain chain;
+		private final FilterChain chain;
 
 		//---------------------------------------------------------
 		// Filter methods
 
 		/**
 		 * Builds a filter based on the command line options.
-		 * @param options Options passed to the filter.
 		 */
-		public ListDirectoryFilter(final File currentPath) throws IOException {
+		public ListDirectoryFilter() throws IOException {
 			// Build a filter chain
 			chain = new FilterChain();
 			// Fill in the filter chain
@@ -703,8 +713,8 @@ public class ListDirectoryCommand {
 				});
 			}
 
-			if (!all && !almostAll && hide != null && hide.trim().length() > 0) {
-				final Pattern pattern = Pattern.compile(hide);
+			if (!all && !almostAll && hide != null && !hide.trim().isEmpty()) {
+				final var pattern = Pattern.compile(hide);
 				// Improvement: try to solve this without repeating any code
 				// Requirements for final pattern variable in order to use
 				//	it into an anonymous implementation of Filter makes it
@@ -717,12 +727,12 @@ public class ListDirectoryCommand {
 					}
 				});
 			}
-			if (ignore != null && ignore.trim().length() > 0) {
+			if (ignore != null && !ignore.trim().isEmpty()) {
 				final Pattern pattern = Pattern.compile(ignore);
 				chain.append(new Filter() {
 					@Override
 					public boolean accept(File f) throws IOException {
-						Matcher m = pattern.matcher(f.getName());
+						var m = pattern.matcher(f.getName());
 						return !m.find();
 					}
 				});

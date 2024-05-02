@@ -5,17 +5,18 @@ import cli.ExecutionContext;
 import cli.annotations.Command;
 import cli.annotations.Parameter;
 import cli.annotations.Run;
+import lombok.Setter;
 import unxutils.format.HumanReadableFormat;
 
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.math.BigDecimal;
 import java.nio.file.FileStore;
-import java.nio.file.FileSystem;
 import java.nio.file.FileSystems;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import static java.math.RoundingMode.FLOOR;
 import static unxutils.format.Format.format;
 
 /**
@@ -194,6 +195,7 @@ Ignored; for compatibility with System V versions of df.
 }
 </pre>
  */
+@Setter
 @Command(command="df", description="df reports the amount of disk space used and available on file systems")
 public class FreeDiskSpaceCommand {
 
@@ -211,7 +213,7 @@ public class FreeDiskSpaceCommand {
 	
 	//-----------------------------------------------------------------
 	// Command parameters
-	
+
 	@Parameter(name="T", longName="print-type", description="Print each file system�s type.")
 	private Boolean printType = Boolean.FALSE;
 	@Parameter(name="h",
@@ -230,9 +232,9 @@ public class FreeDiskSpaceCommand {
 	@Run
 	// Entry point for df
 	public int execute(ExecutionContext ctx) throws Exception {
-		FileSystem fileSystem = FileSystems.getDefault();
+		var fileSystem = FileSystems.getDefault();
 		printHeaders(ctx.standardOutput());
-		for (FileStore fs: fileSystem.getFileStores()) {
+		for (var fs: fileSystem.getFileStores()) {
 			renderFS(fs, ctx.standardOutput());
 		}
 		return 0;
@@ -254,14 +256,12 @@ public class FreeDiskSpaceCommand {
 	private void renderFS(FileStore fs, PrintWriter stdOutput) throws CmdException {
 		try {
 			// Filesystem, total size, used, available, usage%
-			BigDecimal totalSize = new BigDecimal(fs.getTotalSpace());
-			BigDecimal usedSize =
-				new BigDecimal(fs.getTotalSpace()).
-					subtract(new BigDecimal(fs.getUnallocatedSpace()));
-			BigDecimal availableSize = new BigDecimal(fs.getUnallocatedSpace());
-			BigDecimal usage = BigDecimal.ZERO;
+			var totalSize = new BigDecimal(fs.getTotalSpace());
+			var usedSize = new BigDecimal(fs.getTotalSpace()).subtract(new BigDecimal(fs.getUnallocatedSpace()));
+			var availableSize = new BigDecimal(fs.getUnallocatedSpace());
+			var usage = BigDecimal.ZERO;
 			if (!totalSize.equals(BigDecimal.ZERO)) {
-				usage = usedSize.divide(totalSize, 2, BigDecimal.ROUND_FLOOR).multiply(new BigDecimal(100));
+				usage = usedSize.divide(totalSize, 2, FLOOR).multiply(new BigDecimal(100));
 			}
 
 			stdOutput.print(format(fs.toString(), WIDTH_FILESYSTEM));
@@ -282,7 +282,7 @@ public class FreeDiskSpaceCommand {
 	
 	// Prints a number according to options
 	private String printNumber(BigDecimal n) {
-		String ret = "";
+		var ret = "";
 		if (humanReadable) {
 			ret = format(HumanReadableFormat.format(n), WIDTH_HUMAN_SIZE);
 		}
@@ -291,20 +291,5 @@ public class FreeDiskSpaceCommand {
 		}
 		return ret;
 	}
-
-	/**
-	 * @param printType the printType to set
-	 */
-	public void setPrintType(Boolean printType) {
-		this.printType = printType;
-	}
-
-	/**
-	 * @param humanReadable the humanReadable to set
-	 */
-	public void setHumanReadable(Boolean humanReadable) {
-		this.humanReadable = humanReadable;
-	}
-	
 	
 }

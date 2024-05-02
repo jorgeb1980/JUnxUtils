@@ -1,19 +1,24 @@
 package unxutils.coreutils;
 
 import cli.ExecutionContext;
+import lombok.Getter;
 import org.apache.commons.lang.RandomStringUtils;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
-import java.io.*;
-import java.nio.charset.StandardCharsets;
+import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.IOException;
+import java.io.OutputStreamWriter;
+import java.io.PrintWriter;
 import java.nio.file.Files;
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.fail;
 
 /**
  * This class tests the ls command
@@ -21,15 +26,15 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 public class TestListDirectoryCommand {
 
 	private static final int DOT_FILES = 3;
-	private static List<File> dotFiles = new LinkedList<>();
+	private static final List<File> dotFiles = new LinkedList<>();
 	private static final int BACKUP_FILES = 4;
-	private static List<File> backupFiles = new LinkedList<>();
+	private static final List<File> backupFiles = new LinkedList<>();
 	private static final int ABC_FILES = 3;
-	private static List<File> abcFiles = new LinkedList<>();
+	private static final List<File> abcFiles = new LinkedList<>();
 	
 	private File directory = null;
 	
-	@Before
+	@BeforeEach
 	public void populateDirectory() {
 		try {
 			directory = Files.createTempDirectory("tmp").toFile();
@@ -58,7 +63,8 @@ public class TestListDirectoryCommand {
 	}
 
 	private static class TestExecutionContext {
-		private ExecutionContext ctx;
+		@Getter
+        private ExecutionContext ctx;
 		private PrintWriter stdOutput;
 		private ByteArrayOutputStream stdBytes;
 		private PrintWriter errOutput;
@@ -76,8 +82,7 @@ public class TestListDirectoryCommand {
 			);
 		}
 
-		public ExecutionContext getCtx() { return ctx; }
-		private String print(PrintWriter pw, ByteArrayOutputStream baos) {
+        private String print(PrintWriter pw, ByteArrayOutputStream baos) {
 			pw.flush();
 			return baos.toString(UTF_8);
 		}
@@ -95,11 +100,11 @@ public class TestListDirectoryCommand {
 			var lines = new LinkedList<>(ctx.getStdOutput().lines().toList());
 			Collections.sort(lines);
 			// No files starting with dot, no backups (ending with ~)
-			var sortedFiles = abcFiles.stream().map(f -> f.getName()).sorted().toList();
-			Assert.assertEquals(sortedFiles.toArray(), lines.toArray());
-			Assert.assertEquals("", ctx.getErrOutput());
+			var sortedFiles = abcFiles.stream().map(File::getName).sorted().toList();
+			assertEquals(sortedFiles, lines);
+			assertEquals("", ctx.getErrOutput());
 		} catch(Exception e) {
-			Assert.fail(e.getMessage());
+			fail(e.getMessage());
 		}
 	}
 }
