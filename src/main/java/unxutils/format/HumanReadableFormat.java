@@ -14,7 +14,7 @@ public class HumanReadableFormat {
 	// Kilobytes
 	private static final int UNIT = 1024;
 	// Decimal point format
-	private static final Locale LOCALE = new Locale("es");
+	private static final Locale LOCALE = Locale.of("es");
 	
 	//--------------------------------------------------------------------
 	// Class methods
@@ -39,7 +39,7 @@ public class HumanReadableFormat {
 	
 	/**
 	 * This method formats a number into a human readable format. 
-	 * @param number Long big decimal number.
+	 * @param bigDecimal Long big decimal number.
 	 * @return The number turned into a human readable size (e.g., 1K 234M 2G)
 	 */
 	public static String format(BigDecimal bigDecimal) {
