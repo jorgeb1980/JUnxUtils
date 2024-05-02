@@ -12,6 +12,7 @@ import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import java.nio.file.Files;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
@@ -103,6 +104,20 @@ public class TestListDirectoryCommand {
 			var sortedFiles = abcFiles.stream().map(File::getName).sorted().toList();
 			assertEquals(sortedFiles, lines);
 			assertEquals("", ctx.getErrOutput());
+		} catch(Exception e) {
+			fail(e.getMessage());
+		}
+	}
+
+	@Test
+	public void listSingleFile() {
+		var ctx = new TestExecutionContext(directory);
+		var command = new ListDirectoryCommand();
+		command.setFiles(Arrays.asList(dotFiles.getFirst().getName()));
+		try {
+			command.execute(ctx.getCtx());
+			System.out.print("Output:\n" + ctx.getStdOutput());
+			assertEquals(dotFiles.getFirst().getName().trim(), ctx.getStdOutput().trim());
 		} catch(Exception e) {
 			fail(e.getMessage());
 		}
