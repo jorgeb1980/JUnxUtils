@@ -1,7 +1,6 @@
 package unxutils.coreutils;
 
 import cli.ANSIEscapeCode;
-import cli.ExecutionContext;
 import cli.annotations.Command;
 import cli.annotations.OptionalArgs;
 import cli.annotations.Parameter;
@@ -13,7 +12,6 @@ import unxutils.format.HumanReadableFormat;
 import java.io.File;
 import java.io.FileFilter;
 import java.io.IOException;
-import java.io.PrintWriter;
 import java.nio.file.AccessDeniedException;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
@@ -36,6 +34,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import static java.lang.Boolean.FALSE;
+import static java.lang.System.out;
 import static java.nio.file.attribute.PosixFilePermission.GROUP_EXECUTE;
 import static java.nio.file.attribute.PosixFilePermission.GROUP_READ;
 import static java.nio.file.attribute.PosixFilePermission.GROUP_WRITE;
@@ -57,9 +56,9 @@ Options and file arguments can be intermixed arbitrarily, as usual.
 
 For non-option command-line arguments that are directories, by default ls lists 
 the contents of directories, not recursively, and omitting files with names 
-beginning with �.�. For other non-option arguments, by default ls lists just the 
+beginning with .. For other non-option arguments, by default ls lists just the 
 file name. If no non-option argument is specified, ls operates on the current 
-directory, acting as if it had been invoked with a single argument of �.�.
+directory, acting as if it had been invoked with a single argument of ..
 
 By default, the output is sorted alphabetically, according to the locale settings 
 in effect.3 If standard output is a terminal, the output is in columns (sorted 
@@ -70,7 +69,7 @@ Because ls is such a fundamental program, it has accumulated many options over
 the years. They are described in the subsections below; within each section, 
 options are listed alphabetically (ignoring case). The division of options into 
 the subsections is not absolute, since some options affect more than one aspect 
-of ls�s operation.
+of lss operation.
 
 Exit status:
 
@@ -89,49 +88,49 @@ Exit status:
 {@code
 These options determine which files ls lists information for. By default, ls 
 lists files and the contents of any directories on the command line, except that 
-in directories it ignores files whose names start with �.�.
+in directories it ignores files whose names start with ..
 
-�-a�
-�--all�
-In directories, do not ignore file names that start with �.�.
+-a
+--all
+In directories, do not ignore file names that start with ..
 
-�-A�
-�--almost-all�
-In directories, do not ignore all file names that start with �.�; ignore only . 
+-A
+--almost-all
+In directories, do not ignore all file names that start with .; ignore only . 
 and ... The --all (-a) option overrides this option.
 
-�-B�
-�--ignore-backups�
-In directories, ignore files that end with �~�. This option is equivalent to 
-�--ignore='*~' --ignore='.*~'�.
+-B
+--ignore-backups
+In directories, ignore files that end with ~. This option is equivalent to 
+--ignore='*~' --ignore='.*~'.
 
-�--group-directories-first�
+--group-directories-first
 Group all the directories before the files and then sort the directories and the 
-files separately using the selected sort key (see �sort option). That is, this 
-option specifies a primary sort key, and the �sort option specifies a secondary 
+files separately using the selected sort key (see sort option). That is, this 
+option specifies a primary sort key, and the sort option specifies a secondary 
 key. However, any use of --sort=none (-U) disables this option altogether.
 
-�--hide=PATTERN�
+--hide=PATTERN
 In directories, ignore files whose names match the shell pattern pattern, unless 
 the --all (-a) or --almost-all (-A) is also given. This option acts like 
 --ignore=pattern except that it has no effect if --all (-a) or --almost-all (-A) 
 is also given.
 
 This option can be useful in shell aliases. For example, if lx is an alias for 
-�ls --hide='*~'� and ly is an alias for �ls --ignore='*~'�, then the command 
-�lx -A� lists the file README~ even though �ly -A� would not.
+ls --hide='*~' and ly is an alias for ls --ignore='*~', then the command 
+lx -A lists the file README~ even though ly -A would not.
 
-�-I pattern�
-�--ignore=pattern�
+-I pattern
+--ignore=pattern
 In directories, ignore files whose names match the shell pattern (not regular 
-expression) pattern. As in the shell, an initial �.� in a file name does not 
+expression) pattern. As in the shell, an initial . in a file name does not 
 match a wildcard at the start of pattern. Sometimes it is useful to give this 
 option several times. For example,
 
 $ ls --ignore='.??*' --ignore='.[^.]' --ignore='#*'
-The first option ignores names of length 3 or more that start with �.�, the 
-second ignores all two-character names that start with �.� except �..�, and 
-the third ignores names that start with �#�.
+The first option ignores names of length 3 or more that start with ., the 
+second ignores all two-character names that start with . except .., and 
+the third ignores names that start with #.
 
 `-l'
 `--format=long'
@@ -182,8 +181,8 @@ the third ignores names that start with �#�.
      character is a space, there is no alternate access method.  When it
      is a printing character (e.g., `+'), then there is such a method.
 
-�-R�
-�--recursive�
+-R
+--recursive
 List the contents of all directories recursively.
 
  --color       colors the output
@@ -192,7 +191,6 @@ List the contents of all directories recursively.
 */
 @Command(command="ls", description="List information about the files (the current directory by default).")
 public class ListDirectoryCommand {
-
 
 	//-----------------------------------------------------------------
 	// Command constants
@@ -221,33 +219,36 @@ public class ListDirectoryCommand {
 	@Setter
 	@Parameter(name="a",
 		longName="all",
-		description="In directories, do not ignore "
-			+ "file names that start with �.�")
+		description="In directories, do not ignore file names that start with ."
+	)
 	private Boolean all = FALSE;
 
 	@Setter
 	@Parameter(name="A",
 		longName="almost-all",
 		description="In directories, do not ignore all file names that start "
-			+ "with �.�; ignore only . and .. The --all (-a) "
-			+ "option overrides this option.")
+			+ "with .; ignore only . and .. The --all (-a) "
+			+ "option overrides this option."
+	)
 	private Boolean almostAll = FALSE;
 
 	@Setter
 	@Parameter(name="B",
 		longName="ignore-backups",
-		description="In directories, ignore files that end with �~�. This option "
-			+ "is equivalent to �--ignore='*~' --ignore='.*~'�")
-	private Boolean ignoreBackups = Boolean.TRUE;
+		description="In directories, ignore files that end with ~. This option "
+			+ "is equivalent to --ignore='*~' --ignore='.*~'"
+	)
+	private Boolean ignoreBackups = Boolean.FALSE;
 
 	@Setter
 	@Parameter(longName="group-directories-first",
 		description="Group all the directories before the files and then sort "
 			+ "the directories and the files separately using the "
 			+ "selected sort key (see sort option). That is, this "
-			+ "option specifies a primary sort key, and the �sort "
+			+ "option specifies a primary sort key, and the sort "
 			+ "option specifies a secondary key. However, any use of "
-			+ "sort=none (-U) disables this option altogether")
+			+ "sort=none (-U) disables this option altogether"
+	)
 	private Boolean groupDirectoriesFirst = FALSE;
 
 	@Setter
@@ -255,35 +256,28 @@ public class ListDirectoryCommand {
 		description="In directories, ignore files whose names match the shell pattern pattern,"
 			+ " unless the --all (-a) or --almost-all (-A) is also given. This option "
 			+ "acts like --ignore=pattern except that it has no effect if --all (-a) "
-			+ "or --almost-all (-A) is also given")
+			+ "or --almost-all (-A) is also given"
+	)
 	private String hide = null;
 
 	@Setter
-	@Parameter(longName="color",
-		description="colors the output.")
+	@Parameter(longName="color", description="colors the output.")
 	private Boolean color = FALSE;
 
 	@Setter
-	@Parameter(name="I",
-		longName="ignore",
-		description="do not list implied entries matching shell PATTERN")
+	@Parameter(name="I", longName="ignore", description="do not list implied entries matching shell PATTERN")
 	private String ignore = null;
 
 	@Setter
-	@Parameter(name="h",
-		longName="human-readable",
-		description="print human readable sizes (e.g., 1K 234M 2G)")
+	@Parameter(name="h", longName="human-readable", description="print human readable sizes (e.g., 1K 234M 2G)")
 	private Boolean humanReadable = FALSE;
 
 	@Setter
-	@Parameter(name="R",
-		longName="recursive",
-		description="list subdirectories recursively")
+	@Parameter(name="R", longName="recursive", description="list subdirectories recursively")
 	private Boolean recursive = FALSE;
 
 	@Setter
-	@Parameter(name="l",
-		description="use a long listing format")
+	@Parameter(name="l", description="use a long listing format")
 	private Boolean longOutputFormat = FALSE;
 
 	@Setter
@@ -307,34 +301,27 @@ public class ListDirectoryCommand {
 
 	@Run
 	// Entry point for ls
-	public int execute(ExecutionContext ctx) throws Exception {
-		int ret = 0;
-
+	public int execute(Path cwd) throws Exception {
 		var paths = new LinkedList<Path>();
 		if (files == null) {
-			paths.add(ctx.currentPath());
+			paths.add(cwd);
 		} else {
 			for (String file: files) {
 				var path = Path.of(file);
 				if (path.isAbsolute()) paths.add(path);
-				else paths.add(new File(ctx.currentPath().toFile(), file).toPath());
+				else paths.add(new File(cwd.toFile(), file).toPath());
 			}
 		}
 		for (var path: paths) {
 			try {
-				// Gather results, combining the appropriated filter options
-				var results = listFiles(path);
-				// Render the result presentation, combining the appropriated
-				//	output options
-				for (var f: results) {
-					printFileResult(paths.size() > 1, ctx.standardOutput(), path, ctx.currentPath(), f);
-				}
+				// Render the result presentation, combining the appropriated output options
+				for (var f: listFiles(path)) printFileResult(paths.size() > 1, path, cwd, f);
 			} catch(AccessDeniedException e) {
 				// Cannot enter here...
-				ctx.errorOutput().println(e.getMessage());
+				System.err.println(e.getMessage());
 			}
 		}
-		return ret;
+		return 0;
 	}
 
 	// List the files under the current path
@@ -373,7 +360,7 @@ public class ListDirectoryCommand {
 	}
 
 	// Presentation of a file result relative to some path (maybe nested)
-	private void printFileResult(boolean manyFiles, PrintWriter out, Path path, Path currentPath, FileResult f)
+	private void printFileResult(boolean manyFiles, Path path, Path currentPath, FileResult f)
 		throws IOException {
 		// We write only once every directory header
 		if (manyFiles
@@ -383,16 +370,16 @@ public class ListDirectoryCommand {
 			reportedDirectoryPaths.add(path);
 		}
 		if (f.getChildren() == null) {
-			printFile(out, f, path);
+			printFile(f, path);
 		} else {
 			for (FileResult child: f.getChildren()) {
-				printFileResult(true, out, path, currentPath, child);
+				printFileResult(true, path, currentPath, child);
 			}
 		}
 	}
 
 	// Prints the information of a file
-	private void printFile(PrintWriter out, FileResult f, Path currentPath) throws IOException {
+	private void printFile(FileResult f, Path currentPath) throws IOException {
 		var posixAttrs = f.getPosixAttrs();
 		var fileName = getFileName(f, currentPath, posixAttrs);
 		// Is it long?
@@ -701,20 +688,10 @@ public class ListDirectoryCommand {
 			chain = new FilterChain();
 			// Fill in the filter chain
 			if (!all && !almostAll) {
-				chain.append(new Filter() {
-					@Override
-					public boolean accept(File f) throws IOException {
-						return !f.getName().startsWith(".");
-					}
-				});
+				chain.append(f -> !f.getName().startsWith("."));
 			}
 			if (ignoreBackups) {
-				chain.append(new Filter() {
-					@Override
-					public boolean accept(File f) throws IOException {
-						return !f.getName().endsWith("~");
-					}
-				});
+				chain.append(f -> !f.getName().endsWith("~"));
 			}
 
 			if (!all && !almostAll && hide != null && !hide.trim().isEmpty()) {
@@ -723,23 +700,17 @@ public class ListDirectoryCommand {
 				// Requirements for final pattern variable in order to use
 				//	it into an anonymous implementation of Filter makes it
 				//	hard
-				chain.append(new Filter() {
-					@Override
-					public boolean accept(File f) throws IOException {
-						Matcher m = pattern.matcher(f.getName());
-						return !m.find();
-					}
-				});
+				chain.append(f -> {
+                    Matcher m = pattern.matcher(f.getName());
+                    return !m.find();
+                });
 			}
 			if (ignore != null && !ignore.trim().isEmpty()) {
 				final Pattern pattern = Pattern.compile(ignore);
-				chain.append(new Filter() {
-					@Override
-					public boolean accept(File f) throws IOException {
-						var m = pattern.matcher(f.getName());
-						return !m.find();
-					}
-				});
+				chain.append(f -> {
+                    var m = pattern.matcher(f.getName());
+                    return !m.find();
+                });
 			}
 		}
 

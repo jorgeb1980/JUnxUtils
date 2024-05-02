@@ -3,7 +3,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>junxutils</groupId>
   <artifactId>app</artifactId>
-  <version>1.0-SNAPSHOT</version>
+  <version>1.1-SNAPSHOT</version>
 
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -11,6 +11,12 @@
     <java.version>21</java.version>
   </properties>
   <build>
+      <resources>
+          <resource>
+              <directory>src/main/resources</directory>
+              <filtering>true</filtering>
+          </resource>
+      </resources>
       <finalName>redist/libs/app-${project.version}</finalName>
       <plugins>
           <plugin>
@@ -24,6 +30,11 @@
                       </goals>
                   </execution>
               </executions>
+          </plugin>
+          <plugin>
+              <groupId>org.apache.maven.plugins</groupId>
+              <artifactId>maven-resources-plugin</artifactId>
+              <version>2.7</version>
           </plugin>
           <plugin>
               <artifactId>maven-dependency-plugin</artifactId>
