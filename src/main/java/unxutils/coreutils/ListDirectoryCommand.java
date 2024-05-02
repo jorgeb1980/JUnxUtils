@@ -340,16 +340,20 @@ public class ListDirectoryCommand {
 	// List the files under the current path
 	private List<FileResult> listFiles(Path path) throws IOException {
 		var ret = new LinkedList<FileResult>();
-		if (all) {
-			ret.add(new FileResult(path.toFile()));
+		if (path.toFile().exists()) {
+			if (path.toFile().isDirectory()) {
+				if (all) {
+					ret.add(new FileResult(path.toFile()));
+				}
+				if (all && path.getParent() != null) {
+					ret.add(new FileResult(path.getParent().toFile()));
+				}
+				for (File f : path.toFile().listFiles(new ListDirectoryFilter())) {
+					ret.add(new FileResult(f, recursive));
+				}
+			}
+			else ret.add(new FileResult(path.toFile()));
 		}
-		if (all && path.getParent() != null) {
-			ret.add(new FileResult(path.getParent().toFile()));
-		}
-		for (File f: path.toFile().listFiles(new ListDirectoryFilter())) {
-			ret.add(new FileResult(f, recursive));
-		}
-
 		return ret;
 	}
 
@@ -489,7 +493,7 @@ public class ListDirectoryCommand {
 	private String getFileName(FileResult f, Path currentPath, PosixFileAttributes posixAttrs)
 		throws IOException {
 		var fileName = f.getFile().getName();
-		if (currentPath.toFile().getCanonicalPath().equals(f.getFile().getCanonicalPath())) {
+		if (f.getFile().isDirectory() && currentPath.toFile().getCanonicalPath().equals(f.getFile().getCanonicalPath())) {
 			fileName = ".";
 		} else if (currentPath.toFile().getParentFile() != null &&
 			currentPath.toFile().getParentFile().getCanonicalPath().equals(
