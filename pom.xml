@@ -8,6 +8,7 @@
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <cli.library.revision>1.8.0</cli.library.revision>
+    <test.library.revision>1.0.0-SNAPSHOT</test.library.revision>
     <java.version>21</java.version>
   </properties>
   <build>
@@ -66,6 +67,7 @@
       </pluginManagement>
   </build>
   <dependencies>
+      <!-- https://github.com/jorgeb1980/lib-cli-base -->
       <dependency>
           <groupId>cli-library</groupId>
           <artifactId>cli-command-library</artifactId>
@@ -76,6 +78,13 @@
           <groupId>org.projectlombok</groupId>
           <artifactId>lombok</artifactId>
           <version>1.18.30</version>
+      </dependency>
+      <!-- https://github.com/jorgeb1980/lib-test-utils -->
+      <dependency>
+          <groupId>test</groupId>
+          <artifactId>utils</artifactId>
+          <version>${test.library.revision}</version>
+          <scope>test</scope>
       </dependency>
       <dependency>
           <groupId>org.junit.jupiter</groupId>
