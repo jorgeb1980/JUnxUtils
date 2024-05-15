@@ -10,6 +10,8 @@ import java.util.LinkedList;
 import java.util.List;
 
 import static org.apache.commons.lang.RandomStringUtils.random;
+import static org.apache.commons.lang.RandomStringUtils.randomAlphanumeric;
+import static org.apache.commons.lang.RandomStringUtils.randomAscii;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -34,17 +36,17 @@ public class TestListDirectoryCommand {
 			// Populate the directory
 			// Files starting with .
 			for (int i = 0; i < DOT_FILES; i++) {
-				File f = new File(directory, ".dotFile" + i);
+				var f = new File(directory, ".dotFile" + i);
 				if (f.createNewFile()) dotFiles.add(f);
 			}
 			// Files ending with ~
 			for (int i = 0; i < BACKUP_FILES; i++) {
-				File f = new File(directory, "backup" + i + "~");
+				var f = new File(directory, "backup" + i + "~");
 				if (f.createNewFile()) backupFiles.add(f);
 			}
 			// Files containing abc in some place of its name
 			for (int i = 0; i < ABC_FILES; i++) {
-				File f = new File(directory, random(3) + "abc" + random(4));
+				var f = new File(directory, randomAlphanumeric(3) + "abc" + randomAlphanumeric(4));
 				if (f.createNewFile()) abcFiles.add(f);
 			}
 		}
