@@ -1,6 +1,6 @@
 package unxutils.format;
 
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 
 /**
  * Utility functions for presentation, etc.
