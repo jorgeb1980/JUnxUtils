@@ -7,7 +7,7 @@
 
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    <cli.library.revision>1.8.0</cli.library.revision>
+    <cli.library.revision>1.11.0</cli.library.revision>
     <test.library.revision>2.0.0</test.library.revision>
     <java.version>21</java.version>
   </properties>
@@ -90,6 +90,12 @@
           <groupId>org.junit.jupiter</groupId>
           <artifactId>junit-jupiter-api</artifactId>
           <version>5.10.1</version>
+          <scope>test</scope>
+      </dependency>
+      <dependency>
+          <groupId>org.apache.commons</groupId>
+          <artifactId>commons-lang3</artifactId>
+          <version>3.20.0</version>
           <scope>test</scope>
       </dependency>
   </dependencies>
