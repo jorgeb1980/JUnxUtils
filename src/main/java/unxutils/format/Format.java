@@ -1,7 +1,5 @@
 package unxutils.format;
 
-import org.apache.commons.lang.StringUtils;
-
 /**
  * Utility functions for presentation, etc.
  */
@@ -27,8 +25,12 @@ public class Format {
         }
         else if (string.length() < length && fill) {
             // Pad with spaces
-            ret = StringUtils.leftPad(string, length, " ");
+            ret = padLeft(string, length);
         }
         return ret;
+    }
+
+    private static String padLeft(String s, int n) {
+        return String.format("%" + n + "s", s);
     }
 }
