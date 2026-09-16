@@ -1,37 +1,42 @@
 package unxutils.coreutils.cat;
 
+import lombok.AllArgsConstructor;
+
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
-import java.util.Scanner;
-import java.util.regex.MatchResult;
-import java.util.stream.Stream;
+import java.util.Objects;
+import java.util.stream.Collectors;
 
+@AllArgsConstructor
 public class ConcatenateService {
-    private static Stream<String> getLines(Path path) {
+    private ConcatenateOptions options = null;
+
+    private static String getContent(Path path) {
         try {
-            return Files.lines(path);
+            return Files.readString(path);
         }
         catch (IOException e) {
-            return Stream.empty();
+            return null;
         }
     }
 
-    private Stream<String> fileInput(Path cwd, String file) {
-        if (file.equals("-")) return new Scanner(
-                System.in,
-                StandardCharsets.UTF_8
-        ).findAll(".+").map(MatchResult::group);
-        else {
-            var filePath = cwd.resolve(file).toAbsolutePath();
-            return getLines(filePath);
+    private String fileInput(Path cwd, String file) {
+        try {
+            if (file.equals("-")) return new String(options.standardInput().readAllBytes(), StandardCharsets.UTF_8);
+            else return getContent(cwd.resolve(file).toAbsolutePath());
+        }
+        catch (IOException e) {
+            return null;
         }
     }
 
-    public void concatenate(Path cwd, List<String> files) {
-        var linesStream = files.stream().map(file -> fileInput(cwd, file)).reduce(Stream::concat).orElse(Stream.empty());
-        linesStream.forEach(System.out::println);
+    public String concatenate(Path cwd, List<String> files) {
+        var linesStream = files.stream().map(
+            file -> fileInput(cwd, file)
+        ).filter(Objects::nonNull).collect(Collectors.joining()).lines();
+        return linesStream.collect(Collectors.joining("\n"));
     }
 }

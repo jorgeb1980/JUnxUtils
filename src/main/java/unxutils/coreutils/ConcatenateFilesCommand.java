@@ -5,16 +5,11 @@ import cli.annotations.OptionalArgs;
 import cli.annotations.Parameter;
 import cli.annotations.Run;
 import lombok.Setter;
+import unxutils.coreutils.cat.ConcatenateOptions;
 import unxutils.coreutils.cat.ConcatenateService;
 
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
-import java.util.Scanner;
-import java.util.regex.MatchResult;
-import java.util.stream.Stream;
 
 /**
  * <b>Program documentation</b><br>
@@ -126,7 +121,24 @@ public class ConcatenateFilesCommand {
     // Entry point for cat
     public int execute(Path cwd) throws Exception {
         // Stream of lines concatenating all the input
-        new ConcatenateService().concatenate(cwd, files);
+        var output =
+            new ConcatenateService(
+                ConcatenateOptions
+                    .builder()
+                    .showAll(showAll)
+                    .numberNonBlank(numberNonBlank)
+                    .showControlAndNumbers(showControlAndNumbers)
+                    .showEnds(showEnds)
+                    .number(number)
+                    .squeezeBlank(squeezeBlank)
+                    .showControlAndTabs(showControlAndTabs)
+                    .showTabs(showTabs)
+                    .ignoredParameter(ignoredParameter)
+                    .showNonprinting(showNonprinting)
+                    .standardInput(System.in)
+                    .build()
+            ).concatenate(cwd, files);
+        System.out.print(output);
         return 0;
     }
 
