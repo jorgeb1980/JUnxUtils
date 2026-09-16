@@ -5,6 +5,7 @@ import cli.annotations.OptionalArgs;
 import cli.annotations.Parameter;
 import cli.annotations.Run;
 import lombok.Setter;
+import unxutils.coreutils.cat.ConcatenateService;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -125,31 +126,8 @@ public class ConcatenateFilesCommand {
     // Entry point for cat
     public int execute(Path cwd) throws Exception {
         // Stream of lines concatenating all the input
-        getInputStream(cwd, files).forEach(System.out::println);
+        new ConcatenateService().concatenate(cwd, files);
         return 0;
     }
 
-    private static Stream<String> getLines(Path path) {
-        try {
-            return Files.lines(path);
-        }
-        catch (IOException e) {
-            return Stream.empty();
-        }
-    }
-
-    private Stream<String> fileInput(Path cwd, String file) {
-        if (file.equals("-")) return new Scanner(
-                System.in,
-                StandardCharsets.UTF_8
-            ).findAll(".+").map(MatchResult::group);
-        else {
-            var filePath = cwd.resolve(file).toAbsolutePath();
-            return getLines(filePath);
-        }
-    }
-
-    private Stream<String> getInputStream(Path cwd, List<String> files) {
-        return files.stream().map(file -> fileInput(cwd, file)).reduce(Stream::concat).orElse(Stream.empty());
-    }
 }
