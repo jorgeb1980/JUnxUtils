@@ -1,5 +1,6 @@
 package unxutils.coreutils;
 
+import cli.LogUtils;
 import cli.annotations.Command;
 import cli.annotations.OptionalArgs;
 import cli.annotations.Parameter;
@@ -10,6 +11,7 @@ import unxutils.coreutils.cat.ConcatenateService;
 
 import java.nio.file.Path;
 import java.util.List;
+import java.util.logging.Level;
 
 /**
  * <b>Program documentation</b><br>
@@ -73,53 +75,43 @@ import java.util.List;
 public class ConcatenateFilesCommand {
 
     // Command parameters
-    @Setter
     @Parameter(name = "A", longName = "show-all", description = "Equivalent to -vET.")
     private Boolean showAll;
 
-    @Setter
     @Parameter(name = "b", longName = "--number-nonblank", description = "Number all nonempty output lines, starting with 1.")
     private Boolean numberNonBlank;
 
-    @Setter
     @Parameter(name = "e", description = "Equivalent to -vE.")
     private Boolean showControlAndNumbers;
 
-    @Setter
     @Parameter(name = "E", longName = "show-ends", description = "Display a ‘$’ after the end of each line. The \\r\\n combination is shown as ‘^M$’.")
     private Boolean showEnds;
 
-    @Setter
     @Parameter(name = "n", longName = "number", description = "Number all output lines, starting with 1. This option is ignored if -b is in effect.")
     private Boolean number;
 
-    @Setter
     @Parameter(name = "s", longName = "squeeze-blank", description = "Suppress repeated adjacent blank lines; output just one empty line instead of several.")
     private Boolean squeezeBlank;
 
-    @Setter
     @Parameter(name = "t", description = "Equivalent to -vT.")
     private Boolean showControlAndTabs;
 
-    @Setter
     @Parameter(name = "T", longName = "show-tabs", description = "Display TAB characters as ‘^I’.")
     private Boolean showTabs;
 
-    @Setter
     @Parameter(name = "u", description = "Ignored; for POSIX compatibility.")
     private Boolean ignoredParameter;
 
-    @Setter
     @Parameter(name = "v", longName = "show-nonprinting", description = "Display control characters except for LFD and TAB using ‘^’ notation and precede characters that have the high bit set with ‘M-’.")
     private Boolean showNonprinting;
 
-    @Setter
     @OptionalArgs(name = "FILE")
     private List<String> files;
 
     @Run
     // Entry point for cat
     public int execute(Path cwd) throws Exception {
+        if (ignoredParameter) LogUtils.getDefaultLogger().log(Level.FINEST, "Ignoring parameter 'u'.");
         // Stream of lines concatenating all the input
         var output =
             new ConcatenateService(
@@ -133,7 +125,6 @@ public class ConcatenateFilesCommand {
                     .squeezeBlank(squeezeBlank)
                     .showControlAndTabs(showControlAndTabs)
                     .showTabs(showTabs)
-                    .ignoredParameter(ignoredParameter)
                     .showNonprinting(showNonprinting)
                     .standardInput(System.in)
                     .build()

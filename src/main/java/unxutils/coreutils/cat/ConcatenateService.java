@@ -1,5 +1,6 @@
 package unxutils.coreutils.cat;
 
+import cli.LogUtils;
 import lombok.AllArgsConstructor;
 
 import java.io.IOException;
@@ -9,6 +10,8 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
+
+import static java.util.logging.Level.FINER;
 
 @AllArgsConstructor
 public class ConcatenateService {
@@ -24,13 +27,15 @@ public class ConcatenateService {
     }
 
     private String fileInput(Path cwd, String file) {
-        try {
-            if (file.equals("-")) return new String(options.standardInput().readAllBytes(), StandardCharsets.UTF_8);
-            else return getContent(cwd.resolve(file).toAbsolutePath());
+        String ret = null;
+        try(var input = options.standardInput()) {
+            if (file.equals("-")) ret = new String(input.readAllBytes(), StandardCharsets.UTF_8);
+            else ret = getContent(cwd.resolve(file).toAbsolutePath());
         }
-        catch (IOException e) {
-            return null;
+        catch (IOException ioe) {
+            LogUtils.getDefaultLogger().log(FINER, "Error processing %s".formatted(file), ioe);
         }
+        return ret;
     }
 
     public String concatenate(Path cwd, List<String> files) {
