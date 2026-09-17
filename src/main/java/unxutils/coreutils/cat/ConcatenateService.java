@@ -17,7 +17,7 @@ import static java.util.logging.Level.FINER;
 public class ConcatenateService {
     private ConcatenateOptions options = null;
 
-    private static String getContent(Path path) {
+    private static String readFileContent(Path path) {
         try {
             return Files.readString(path);
         }
@@ -26,11 +26,11 @@ public class ConcatenateService {
         }
     }
 
-    private String fileInput(Path cwd, String file) {
+    private String readStreamContent(Path cwd, String file) {
         String ret = null;
         try(var input = options.standardInput()) {
             if (file.equals("-")) ret = new String(input.readAllBytes(), StandardCharsets.UTF_8);
-            else ret = getContent(cwd.resolve(file).toAbsolutePath());
+            else ret = readFileContent(cwd.resolve(file).toAbsolutePath());
         }
         catch (IOException ioe) {
             LogUtils.getDefaultLogger().log(FINER, "Error processing %s".formatted(file), ioe);
@@ -40,8 +40,21 @@ public class ConcatenateService {
 
     public String concatenate(Path cwd, List<String> files) {
         var linesStream = files.stream().map(
-            file -> fileInput(cwd, file)
+            file -> readStreamContent(cwd, file)
         ).filter(Objects::nonNull).collect(Collectors.joining()).lines();
+        // Apply output transformations - squeeze options together since many are actually aliases or
+        //  aggregators for the rest
+        var conversions = TransformationOptions.from(options);
+        if (conversions.showEnds()) linesStream = linesStream.map(this::showEnds);
+        if (conversions.showTabs()) linesStream = linesStream.map(this::showTabs);
         return linesStream.collect(Collectors.joining("\n"));
+    }
+
+    private String showEnds(String line) {
+        return line.replaceAll("\\r\\n","^M$").replaceAll("\\n", "$");
+    }
+
+    private String showTabs(String line) {
+        return line.replace("\t", "^I");
     }
 }

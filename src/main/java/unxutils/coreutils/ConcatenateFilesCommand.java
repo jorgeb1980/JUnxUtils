@@ -13,6 +13,8 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.logging.Level;
 
+import static java.lang.Boolean.FALSE;
+
 /**
  * <b>Program documentation</b><br>
  <pre>
@@ -76,34 +78,34 @@ public class ConcatenateFilesCommand {
 
     // Command parameters
     @Parameter(name = "A", longName = "show-all", description = "Equivalent to -vET.")
-    private Boolean showAll;
+    private Boolean showAll = FALSE;
 
     @Parameter(name = "b", longName = "--number-nonblank", description = "Number all nonempty output lines, starting with 1.")
-    private Boolean numberNonBlank;
+    private Boolean numberNonBlank = FALSE;
 
     @Parameter(name = "e", description = "Equivalent to -vE.")
-    private Boolean showControlAndNumbers;
+    private Boolean showControlAndNumbers = FALSE;
 
     @Parameter(name = "E", longName = "show-ends", description = "Display a ‘$’ after the end of each line. The \\r\\n combination is shown as ‘^M$’.")
-    private Boolean showEnds;
+    private Boolean showEnds = FALSE;
 
     @Parameter(name = "n", longName = "number", description = "Number all output lines, starting with 1. This option is ignored if -b is in effect.")
-    private Boolean number;
+    private Boolean number = FALSE;
 
     @Parameter(name = "s", longName = "squeeze-blank", description = "Suppress repeated adjacent blank lines; output just one empty line instead of several.")
-    private Boolean squeezeBlank;
+    private Boolean squeezeBlank = FALSE;
 
     @Parameter(name = "t", description = "Equivalent to -vT.")
-    private Boolean showControlAndTabs;
+    private Boolean showControlAndTabs = FALSE;
 
     @Parameter(name = "T", longName = "show-tabs", description = "Display TAB characters as ‘^I’.")
-    private Boolean showTabs;
+    private Boolean showTabs = FALSE;
 
     @Parameter(name = "u", description = "Ignored; for POSIX compatibility.")
-    private Boolean ignoredParameter;
+    private Boolean ignoredParameter = FALSE;
 
     @Parameter(name = "v", longName = "show-nonprinting", description = "Display control characters except for LFD and TAB using ‘^’ notation and precede characters that have the high bit set with ‘M-’.")
-    private Boolean showNonprinting;
+    private Boolean showNonprinting = FALSE;
 
     @OptionalArgs(name = "FILE")
     private List<String> files;
