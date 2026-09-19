@@ -1,6 +1,5 @@
 package unxutils.coreutils.cat;
 
-import org.junit.jupiter.api.Assertions;
 import test.Sandbox;
 import test.sandbox.SandboxTest;
 
@@ -8,6 +7,8 @@ import java.io.ByteArrayInputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.List;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class TestConcatenateService {
 
@@ -17,7 +18,7 @@ public class TestConcatenateService {
         var service = new ConcatenateService(ConcatenateOptions.builder().build());
 
         var output = service.concatenate(sandbox.getSandbox().toPath(), List.of("lalala.txt"));
-        Assertions.assertEquals(Files.readString(lalala.toPath()), output);
+        assertEquals(Files.readString(lalala.toPath()), output);
     }
 
     @SandboxTest
@@ -28,7 +29,7 @@ public class TestConcatenateService {
         var service = new ConcatenateService(ConcatenateOptions.builder().build());
 
         var output = service.concatenate(sandbox.getSandbox().toPath(), List.of("lalala.txt", "lerele.txt",  "trololo.txt"));
-        Assertions.assertEquals(
+        assertEquals(
             Files.readString(lalala.toPath()) + Files.readString(lerele.toPath()) + Files.readString(trololo.toPath()),
             output
         );
@@ -43,7 +44,7 @@ public class TestConcatenateService {
         var service = new ConcatenateService(ConcatenateOptions.builder().standardInput(fakedStandardInput).build());
 
         var output = service.concatenate(sandbox.getSandbox().toPath(), List.of("lalala.txt", "-", "lerele.txt"));
-        Assertions.assertEquals(
+        assertEquals(
             Files.readString(lalala.toPath()) + FAKE_TEXT + Files.readString(lerele.toPath()),
             output
         );
@@ -55,12 +56,12 @@ public class TestConcatenateService {
         var service = new ConcatenateService(ConcatenateOptions.builder().build());
         var output = service.concatenate(sandbox.getSandbox().toPath(), List.of("with_gaps.txt"));
 
-        Assertions.assertEquals(Files.readString(withGaps.toPath()), output);
+        assertEquals(Files.readString(withGaps.toPath()), output);
 
         var serviceSqueezing = new ConcatenateService(ConcatenateOptions.builder().squeezeBlank(true).build());
         var outputSqueezing = serviceSqueezing.concatenate(sandbox.getSandbox().toPath(), List.of("with_gaps.txt"));
         var withGapsSqueezed = sandbox.copyResource("cat/with_gaps_squeezed.txt", "with_gaps_squeezed.txt");
-        Assertions.assertEquals(Files.readString(withGapsSqueezed.toPath()), outputSqueezing);
+        assertEquals(Files.readString(withGapsSqueezed.toPath()), outputSqueezing);
     }
 
     @SandboxTest
@@ -70,6 +71,23 @@ public class TestConcatenateService {
         var output = service.concatenate(sandbox.getSandbox().toPath(), List.of("with_gaps.txt"));
 
         var withGapsNumbered = sandbox.copyResource("cat/with_gaps_numbered.txt", "with_gaps_numbered.txt");
-        Assertions.assertEquals(Files.readString(withGapsNumbered.toPath()), output);
+        assertEquals(Files.readString(withGapsNumbered.toPath()), output);
+    }
+
+    @SandboxTest
+    public void testTabs(Sandbox sandbox) throws Exception {
+        sandbox.copyResource("cat/with_tabs.txt", "with_tabs.txt");
+        var service = new ConcatenateService(ConcatenateOptions.builder().showTabs(true).build());
+        var output = service.concatenate(sandbox.getSandbox().toPath(), List.of("with_tabs.txt"));
+
+        var withTabsProcessed = sandbox.copyResource("cat/with_tabs_processed.txt", "with_tabs_processed.txt");
+        assertEquals(Files.readString(withTabsProcessed.toPath()), output);
+    }
+
+    @SandboxTest
+    public void testShowEnds(Sandbox sandbox) throws Exception {
+        var service = new ConcatenateService(ConcatenateOptions.builder().showEnds(true).build());
+        var lalala = sandbox.copyResource("cat/lalala.txt", "lalala.txt");
+        assertEquals(Files.readString(lalala.toPath()), service.concatenate(sandbox.getSandbox().toPath(), List.of("lalala.txt")));
     }
 }

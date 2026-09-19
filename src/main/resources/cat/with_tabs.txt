@@ -1,0 +1,9 @@
+some text	with a tab
+some text   but with spaces
+
+a gap before this
+	
+this line up was actually a tab!
+
+this line was empty instead
+
