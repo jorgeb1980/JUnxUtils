@@ -62,4 +62,14 @@ public class TestConcatenateService {
         var withGapsSqueezed = sandbox.copyResource("cat/with_gaps_squeezed.txt", "with_gaps_squeezed.txt");
         Assertions.assertEquals(Files.readString(withGapsSqueezed.toPath()), outputSqueezing);
     }
+
+    @SandboxTest
+    public void testNumberLines(Sandbox sandbox) throws Exception {
+        sandbox.copyResource("cat/with_gaps.txt", "with_gaps.txt");
+        var service = new ConcatenateService(ConcatenateOptions.builder().number(true).build());
+        var output = service.concatenate(sandbox.getSandbox().toPath(), List.of("with_gaps.txt"));
+
+        var withGapsNumbered = sandbox.copyResource("cat/with_gaps_numbered.txt", "with_gaps_numbered.txt");
+        Assertions.assertEquals(Files.readString(withGapsNumbered.toPath()), output);
+    }
 }

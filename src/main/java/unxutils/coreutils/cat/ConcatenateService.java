@@ -2,6 +2,7 @@ package unxutils.coreutils.cat;
 
 import cli.LogUtils;
 import lombok.AllArgsConstructor;
+import lombok.RequiredArgsConstructor;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -67,7 +68,7 @@ public class ConcatenateService {
             if (lines.size() > 1) {
                 int i = 1;
                 while (i < lines.size())
-                    if (lines.get(i).trim().isEmpty() && lines.get(i - 1).trim().isEmpty())
+                    if (lines.get(i).isEmpty() && lines.get(i - 1).isEmpty())
                         lines.remove(i);
                     else i++;
             }
@@ -75,6 +76,10 @@ public class ConcatenateService {
         }
         if (conversions.showEnds()) linesStream = linesStream.map(this::showEnds);
         if (conversions.showTabs()) linesStream = linesStream.map(this::showTabs);
+        if (conversions.number() || conversions.numberNonBlank()) {
+            var lineNumberHelper = new LineNumberHelper(conversions);
+            linesStream = linesStream.map(lineNumberHelper::decorate);
+        }
         return linesStream.collect(Collectors.joining(System.lineSeparator()));
     }
 
@@ -84,5 +89,17 @@ public class ConcatenateService {
 
     private String showTabs(String line) {
         return line.replace("\t", "^I");
+    }
+
+    @RequiredArgsConstructor
+    private static class LineNumberHelper {
+        private int lineNumber = 1;
+        private final TransformationOptions options;
+
+        public String decorate(String line) {
+            return (options.squeezeBlank() && line.isEmpty())
+                ? line
+                : String.format("%6d%s", lineNumber++, line.trim().isEmpty() ? "" : "\t" + line);
+        }
     }
 }
