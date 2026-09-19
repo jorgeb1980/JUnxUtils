@@ -72,6 +72,12 @@ public class TestConcatenateService {
 
         var withGapsNumbered = sandbox.copyResource("cat/with_gaps_numbered.txt", "with_gaps_numbered.txt");
         assertEquals(Files.readString(withGapsNumbered.toPath()), output);
+
+        var serviceNonBlank = new ConcatenateService(ConcatenateOptions.builder().number(true).numberNonBlank(true).build());
+        var outputNonblank = serviceNonBlank.concatenate(sandbox.getSandbox().toPath(), List.of("with_gaps.txt"));
+
+        var withGapsNumberedNonblank = sandbox.copyResource("cat/with_gaps_numbered_nonblank.txt", "with_gaps_numbered_nonblank.txt");
+        assertEquals(Files.readString(withGapsNumberedNonblank.toPath()), outputNonblank);
     }
 
     @SandboxTest
