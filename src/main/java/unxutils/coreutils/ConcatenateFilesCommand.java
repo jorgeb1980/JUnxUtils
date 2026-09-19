@@ -84,7 +84,7 @@ public class ConcatenateFilesCommand {
     private Boolean numberNonBlank = FALSE;
 
     @Parameter(name = "e", description = "Equivalent to -vE.")
-    private Boolean showControlAndNumbers = FALSE;
+    private Boolean showControlAndEnds = FALSE;
 
     @Parameter(name = "E", longName = "show-ends", description = "Display a ‘$’ after the end of each line. The \\r\\n combination is shown as ‘^M$’.")
     private Boolean showEnds = FALSE;
@@ -122,7 +122,7 @@ public class ConcatenateFilesCommand {
                     .builder()
                     .showAll(showAll)
                     .numberNonBlank(numberNonBlank)
-                    .showControlAndNumbers(showControlAndNumbers)
+                    .showControlAndEnds(showControlAndEnds)
                     .showEnds(showEnds)
                     .number(number)
                     .squeezeBlank(squeezeBlank)

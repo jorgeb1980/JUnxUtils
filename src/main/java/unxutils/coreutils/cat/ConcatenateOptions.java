@@ -10,7 +10,7 @@ import static java.lang.Boolean.FALSE;
 public record ConcatenateOptions(
     Boolean showAll,
     Boolean numberNonBlank,
-    Boolean showControlAndNumbers,
+    Boolean showControlAndEnds,
     Boolean showEnds,
     Boolean number,
     Boolean squeezeBlank,
@@ -23,7 +23,7 @@ public record ConcatenateOptions(
     public ConcatenateOptions {
         if (showAll == null) showAll = FALSE;
         if (numberNonBlank == null) numberNonBlank = FALSE;
-        if (showControlAndNumbers == null) showControlAndNumbers = FALSE;
+        if (showControlAndEnds == null) showControlAndEnds = FALSE;
         if (showEnds == null) showEnds = FALSE;
         if (number == null) number = FALSE;
         if (squeezeBlank == null) squeezeBlank = FALSE;

@@ -84,7 +84,7 @@ public class ConcatenateService {
     }
 
     private String showEnds(String line) {
-        return line.replaceAll("\\r\\n","^M$").replaceAll("\\n", "$");
+        return line + "^M$";
     }
 
     private String showTabs(String line) {

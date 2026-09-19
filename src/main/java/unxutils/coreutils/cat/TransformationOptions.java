@@ -2,8 +2,6 @@ package unxutils.coreutils.cat;
 
 import lombok.Builder;
 
-import java.util.List;
-
 @Builder
 public record TransformationOptions(
         Boolean numberNonBlank,
@@ -17,14 +15,14 @@ public record TransformationOptions(
     public static TransformationOptions from(ConcatenateOptions options) {
         var showNonprinting =
             options.showAll()
-            || options.showControlAndNumbers()
+            || options.showControlAndEnds()
             || options.showControlAndTabs()
             || options.showNonprinting();
         var showTabs =
             options.showAll()
             || options.showControlAndTabs()
             || options.showTabs();
-        var showEnds = options.showAll() || options.showEnds();
+        var showEnds = options.showAll() || options.showEnds() || options.showControlAndEnds();
         return TransformationOptions
             .builder()
             .numberNonBlank(options.numberNonBlank())
