@@ -104,6 +104,7 @@ public class ConcatenateFilesCommand {
     @Parameter(name = "u", description = "Ignored; for POSIX compatibility.")
     private Boolean ignoredParameter = FALSE;
 
+    // This version will behave in text mode, however; this option is redundant
     @Parameter(name = "v", longName = "show-nonprinting", description = "Display control characters except for LFD and TAB using ‘^’ notation and precede characters that have the high bit set with ‘M-’.")
     private Boolean showNonprinting = FALSE;
 

@@ -11,8 +11,7 @@ public record TransformationOptions(
         Boolean number,
         Boolean squeezeBlank,
         Boolean showTabs,
-        Boolean showNonPrinting,
-        Boolean readTextMode
+        Boolean showNonPrinting
 ) {
 
     public static TransformationOptions from(ConcatenateOptions options) {
@@ -26,15 +25,6 @@ public record TransformationOptions(
             || options.showControlAndTabs()
             || options.showTabs();
         var showEnds = options.showAll() || options.showEnds();
-        // From the documentation:
-        // However, cat reads in text mode if one of the options -bensAE is used or if cat is reading from standard input and
-        // standard input is a terminal
-        var readTextMode =
-                options.showAll()
-                || options.number()
-                || options.numberNonBlank()
-                || options.squeezeBlank()
-                || options.showEnds();
         return TransformationOptions
             .builder()
             .numberNonBlank(options.numberNonBlank())
@@ -43,7 +33,6 @@ public record TransformationOptions(
             .squeezeBlank(options.squeezeBlank())
             .showTabs(showTabs)
             .showNonPrinting(showNonprinting)
-            .readTextMode(readTextMode)
             .build();
     }
 

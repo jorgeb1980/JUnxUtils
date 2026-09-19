@@ -48,4 +48,18 @@ public class TestConcatenateService {
             output
         );
     }
+
+    @SandboxTest
+    public void testWithGaps(Sandbox sandbox) throws Exception {
+        var withGaps = sandbox.copyResource("cat/with_gaps.txt", "with_gaps.txt");
+        var service = new ConcatenateService(ConcatenateOptions.builder().build());
+        var output = service.concatenate(sandbox.getSandbox().toPath(), List.of("with_gaps.txt"));
+
+        Assertions.assertEquals(Files.readString(withGaps.toPath()), output);
+
+        var serviceSqueezing = new ConcatenateService(ConcatenateOptions.builder().squeezeBlank(true).build());
+        var outputSqueezing = serviceSqueezing.concatenate(sandbox.getSandbox().toPath(), List.of("with_gaps.txt"));
+        var withGapsSqueezed = sandbox.copyResource("cat/with_gaps_squeezed.txt", "with_gaps_squeezed.txt");
+        Assertions.assertEquals(Files.readString(withGapsSqueezed.toPath()), outputSqueezing);
+    }
 }
