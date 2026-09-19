@@ -16,7 +16,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static test.Sandbox.sandbox;
 
 /**
- * This class tests the ls command
+ * This class tests the ls command.
+ * NON thread-safe tets - capture output method is incompatible with multi-threading these tests
  */
 public class TestListDirectoryCommand {
 
@@ -50,8 +51,6 @@ public class TestListDirectoryCommand {
 		}
 	}
 
-
-	
 	@Test
 	public void testSimpleFiles() {
 		var command = new ListDirectoryCommand();
@@ -145,5 +144,66 @@ public class TestListDirectoryCommand {
 		dirCtx.getDotFiles().forEach(file -> assertTrue(lines.contains(file.getName())));
 		dirCtx.getBackupFiles().forEach(file -> assertTrue(lines.contains(file.getName())));
 		dirCtx.getAbcFiles().forEach(file -> assertFalse(lines.contains(file.getName())));
+	}
+
+	@Test
+	public void listAbsolutePaths() {
+		var command = new ListDirectoryCommand();
+		var dirCtx = new DirectoryContext();
+		var fileName = new StringBuilder();
+		var ctx = sandbox().runTest(
+			(File directory) -> {
+				dirCtx.populateDirectory(directory);
+				var file = dirCtx.getAbcFiles().getFirst();
+				fileName.append(file.getName());
+				command.setFiles(List.of(file.getAbsolutePath()));
+				return command.execute(directory.toPath());
+			},
+			true
+		);
+		var lines = new LinkedList<>(ctx.out().lines().toList());
+		assertTrue(lines.contains(fileName.toString()));
+	}
+
+	private boolean listContains(List<String> list, String value) {
+		return list.stream().anyMatch(s -> s.contains(value));
+	}
+
+	@Test
+	public void listWithLongFormat() {
+		var command = new ListDirectoryCommand();
+		var dirCtx = new DirectoryContext();
+		command.setLongOutputFormat(true);
+		command.setAll(true);
+		var ctx = sandbox().runTest(
+				(File directory) -> {
+					dirCtx.populateDirectory(directory);
+					return command.execute(directory.toPath());
+				},
+				true
+		);
+		var lines = new LinkedList<>(ctx.out().lines().toList());
+		dirCtx.getDotFiles().forEach(file -> assertTrue(listContains(lines, file.getName())));
+		dirCtx.getBackupFiles().forEach(file -> assertTrue(listContains(lines, file.getName())));
+		dirCtx.getAbcFiles().forEach(file -> assertTrue(listContains(lines, file.getName())));
+	}
+
+	@Test
+	public void listWithColor() {
+		var command = new ListDirectoryCommand();
+		var dirCtx = new DirectoryContext();
+		command.setColor(true);
+		command.setAll(true);
+		var ctx = sandbox().runTest(
+				(File directory) -> {
+					dirCtx.populateDirectory(directory);
+					return command.execute(directory.toPath());
+				},
+				true
+		);
+		var lines = new LinkedList<>(ctx.out().lines().toList());
+		dirCtx.getDotFiles().forEach(file -> assertTrue(listContains(lines, file.getName())));
+		dirCtx.getBackupFiles().forEach(file -> assertTrue(listContains(lines, file.getName())));
+		dirCtx.getAbcFiles().forEach(file -> assertTrue(listContains(lines, file.getName())));
 	}
 }

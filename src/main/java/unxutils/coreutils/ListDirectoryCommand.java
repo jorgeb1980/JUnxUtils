@@ -341,7 +341,7 @@ public class ListDirectoryCommand {
 			}
 			else ret.add(new FileResult(path.toFile()));
 		}
-		return ret;
+		return ret.stream().sorted((o1, o2) -> o1.getFile().getName().compareTo(o2.getFile().getName())).toList();
 	}
 
 	// Calculates newPath relative to originalPath, if possible
