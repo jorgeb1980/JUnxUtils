@@ -276,21 +276,14 @@ public class FreeDiskSpaceCommand {
 
 			out.println();
 		} catch (IOException ioe) {
-			//throw new CmdException(ioe, "Could not read filesystem " + fs.name(), -1500);
 			logger.log(Level.WARNING, "Could not read filesystem " + fs.name() + " of type " + fs.type());
 		}
 	}
 	
 	// Prints a number according to options
 	private String printNumber(BigDecimal n) {
-		var ret = "";
-		if (humanReadable) {
-			ret = format(HumanReadableFormat.format(n), WIDTH_HUMAN_SIZE);
-		}
-		else {
-			ret = format(n.toString(), WIDTH_SIZE);
-		}
-		return ret;
+		if (humanReadable) return format(HumanReadableFormat.format(n), WIDTH_HUMAN_SIZE);
+		else return format(n.toString(), WIDTH_SIZE);
 	}
 	
 }
