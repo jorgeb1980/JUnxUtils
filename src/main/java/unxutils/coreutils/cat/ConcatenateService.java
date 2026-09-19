@@ -33,13 +33,17 @@ public class ConcatenateService {
 
     private String readStreamContent(Path cwd, String file) {
         String ret = null;
-        try(var input = options.standardInput()) {
-            if (file.equals("-")) ret = new String(input.readAllBytes(), StandardCharsets.UTF_8);
-            else ret = readFileContent(cwd.resolve(file).toAbsolutePath());
+
+        if (file.equals("-")) {
+            try {
+                ret = new String(options.standardInput().readAllBytes(), StandardCharsets.UTF_8);
+            }
+            catch (IOException ioe) {
+                LogUtils.getDefaultLogger().log(FINER, "Error processing %s".formatted(file), ioe);
+            }
         }
-        catch (IOException ioe) {
-            LogUtils.getDefaultLogger().log(FINER, "Error processing %s".formatted(file), ioe);
-        }
+        else ret = readFileContent(cwd.resolve(file).toAbsolutePath());
+
         return ret;
     }
 
