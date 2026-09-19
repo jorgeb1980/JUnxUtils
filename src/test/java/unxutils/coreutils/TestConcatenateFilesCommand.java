@@ -21,4 +21,15 @@ public class TestConcatenateFilesCommand {
         Assertions.assertEquals(Files.readString(lalala) + Files.readString(trololo), ctx.out());
     }
 
+    @SandboxTest
+    public void testConcatenateFilesWithLineNumbers(Sandbox sandbox) throws IOException {
+        var command = new ConcatenateFilesCommand();
+        var lalala = sandbox.copyResource("cat/lalala.txt", "lalala.txt").toPath();
+        var trololo = sandbox.copyResource("cat/trololo.txt", "trololo.txt").toPath();
+        command.setFiles(List.of(lalala.toFile().getName(), trololo.toAbsolutePath().toString()));
+        command.setIgnoredParameter(true);
+        command.setNumber(true);
+        var ctx = CaptureOutput.captureOutput(() -> command.execute(sandbox.getSandbox().toPath()));
+        Assertions.assertEquals("     1\t" + Files.readString(lalala) + Files.readString(trololo), ctx.out());
+    }
 }
