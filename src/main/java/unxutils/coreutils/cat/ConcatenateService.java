@@ -107,7 +107,7 @@ public class ConcatenateService {
         private final TransformationOptions options;
 
         public String decorate(String line) {
-            return (options.squeezeBlank() && line.isBlank())
+            return (options.numberNonBlank() && line.isBlank())
                 ? line
                 : String.format("%6d%s", lineNumber++, line.trim().isEmpty() ? "" : "\t" + line);
         }
